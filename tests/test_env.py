@@ -22,6 +22,7 @@ def test_defaults_are_profile_s_and_russian(tmp_path):
     assert env["MIH_SCHEDULER_MODE"] == "thread"
     assert env["MIH_EPG_SCOPE"] == "tracked"
     assert env["MIH_BIND_PORT"] == "8765"
+    assert env["MIH_INGRESS_PROXY"] == "172.30.32.2"
     assert "MIH_HA_URL" not in env
     assert "MIH_HOME_COUNTRY" not in env
 

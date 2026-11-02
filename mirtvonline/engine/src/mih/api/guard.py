@@ -26,13 +26,19 @@ MAX_TRACKED = 20000
 
 _HEADERS = [
     (b"x-content-type-options", b"nosniff"),
-    (b"x-frame-options", b"DENY"),
     (b"referrer-policy", b"no-referrer"),
     (b"permissions-policy", b"camera=(), microphone=(), geolocation=()"),
     (b"cross-origin-opener-policy", b"same-origin"),
 ]
 _HSTS = (b"strict-transport-security", b"max-age=31536000")
 _LOOPBACK = parse_networks("127.0.0.0/8, ::1/128")
+
+
+def from_ingress(scope, ingress: tuple) -> bool:
+    """The request came straight from the Home Assistant Ingress proxy (MIH_INGRESS_PROXY):
+    HA has already let the user in, so no token is asked. Only the direct peer counts,
+    never a forwarded header."""
+    return bool(ingress) and _within((scope.get("client") or ("", 0))[0], ingress)
 
 
 def client_address(scope, trusted: tuple) -> str:
@@ -75,9 +81,12 @@ class _Client:
 
 class Guard:
     def __init__(self, app, *, rate_limit: int, auth_fails: int, trusted_proxies: str,
-                 clock=time.monotonic):  # fmt: skip
+                 ingress: bool = False, clock=time.monotonic):  # fmt: skip
         self.app, self.rate_limit, self.auth_fails = app, rate_limit, auth_fails
         self.trusted, self.clock = parse_networks(trusted_proxies), clock
+        # The HA panel shows the UI in a frame of the HA page, which is the same origin
+        # once the Ingress proxy is in front; without Ingress no page may frame it.
+        self.frame = (b"x-frame-options", b"SAMEORIGIN" if ingress else b"DENY")
         self.clients: dict[str, _Client] = {}
 
     async def __call__(self, scope, receive, send):
@@ -92,7 +101,7 @@ class Guard:
             _within((scope.get("client") or ("", 0))[0], self.trusted)
             and _header(scope, b"x-forwarded-proto") == "https"
         )
-        extra = [*_HEADERS, _HSTS] if https else _HEADERS
+        extra = [*_HEADERS, self.frame, _HSTS] if https else [*_HEADERS, self.frame]
         if retry:
             return await _too_many(send, retry, extra)
 

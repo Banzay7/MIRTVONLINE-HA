@@ -17,6 +17,7 @@ from mih import openspeed, playback
 from mih.alerts import GRACE, best_streams, channel_names, find_matches, load_rules, play_key
 from mih.api import adult
 from mih.api.cache import respond
+from mih.api.guard import from_ingress
 from mih.epg.scope import topic_key
 from mih.ids import utc_now
 from mih.quality import resolve, resolve_many
@@ -222,7 +223,9 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
     def _play_picks(request: Request, conn, channel_id: str, key: str | None,
                     token: str | None) -> list:  # fmt: skip
         settings = request.app.state.settings
-        if settings.api_token is not None:
+        if settings.api_token is not None and not from_ingress(
+            request.scope, request.app.state.ingress
+        ):
             bearer = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
             allowed = (key and hmac.compare_digest(key, play_key(settings, channel_id))) or any(
                 v and hmac.compare_digest(v, settings.api_token) for v in (token, bearer)

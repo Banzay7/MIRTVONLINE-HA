@@ -73,6 +73,10 @@ class Settings:
     rate_limit: int = 600
     auth_fails: int = 10
     trusted_proxies: str = "private"
+    # Home Assistant Ingress (the add-on's sidebar panel): the Supervisor proxy that comes
+    # in from these addresses has already checked the HA user, so its requests need no
+    # MIH_API_TOKEN, and the UI may be shown in HA's frame. Empty = no Ingress.
+    ingress_proxy: str = ""
     # Built-in scheduler of ``mih serve``. Off in this dataclass so tests and one-off CLI
     # commands never start background work; from_env turns it on unless MIH_SCHEDULER=0.
     scheduler_enabled: bool = False
@@ -206,6 +210,7 @@ class Settings:
             rate_limit=max(0, int(env.get("MIH_RATE_LIMIT", "600"))),
             auth_fails=max(0, int(env.get("MIH_AUTH_FAILS", "10"))),
             trusted_proxies=env.get("MIH_TRUSTED_PROXIES", "private"),
+            ingress_proxy=env.get("MIH_INGRESS_PROXY", ""),
             scheduler_enabled=env.get("MIH_SCHEDULER", "1") != "0",
             scheduler_mode=_choice(
                 env.get("MIH_SCHEDULER_MODE", "process"), "MIH_SCHEDULER_MODE", SCHEDULER_MODES
@@ -265,6 +270,12 @@ class Settings:
             parse_networks(self.trusted_proxies)
         except ValueError as exc:
             raise ConfigError(f"MIH_TRUSTED_PROXIES: {exc}") from exc
+        try:
+            ingress = parse_networks(self.ingress_proxy)
+        except ValueError as exc:
+            raise ConfigError(f"MIH_INGRESS_PROXY: {exc}") from exc
+        if any(n.num_addresses > 1 for n in ingress):
+            raise ConfigError("MIH_INGRESS_PROXY takes single addresses, not networks")
         if self.mcp_token and len(self.mcp_token) < 24:
             raise ConfigError("MIH_MCP_TOKEN must be at least 24 characters")
         no_token = not (self.mcp_token or self.api_token)
