@@ -144,7 +144,7 @@ def test_play_through_home_assistant_runs_the_script_with_stream_urls(tmp_path):
     c = _ha_client(tmp_path, handler, ha_fields={"channel": "name", "stream_id": ""})
     assert c.get("/api/v1/playback/adapters").json() == {
         "default": "agent",
-        "available": ["agent", "ha"],
+        "available": ["agent", "ha", "tv"],
         "ha_script": "script.mih_play",
     }
     perviy = _channel(c, "первый")

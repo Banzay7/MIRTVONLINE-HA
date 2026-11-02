@@ -464,5 +464,22 @@
   "Всего": "Total",
   "Последняя сборка каталога": "Última criação do catálogo",
   "{0} МБ": "{0} MB",
-  "{0} с, пик памяти {1} МБ": "{0} s, pico de memória {1} MB"
+  "{0} с, пик памяти {1} МБ": "{0} s, pico de memória {1} MB",
+  "Включаю на ТВ: {0}": "Ligando na TV: {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "Nenhuma TV escolhida: escolha em Configurações (O botão “Na TV”).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "O Home Assistant não vê nenhuma TV. Adicione a TV ao HA: integração Android Debug Bridge ou Google Cast.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "A TV escolhida não está mais no Home Assistant: escolha outra em Configurações.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "A TV está indisponível no Home Assistant: ligue-a na tomada ou verifique a integração.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "A TV não tem VLC nem Just Player: instale um deles pelo Google Play.",
+  "Home Assistant не смог включить канал на ТВ": "O Home Assistant não conseguiu ligar o canal na TV",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Direto na TV pelo Home Assistant: ADB, Google Cast, AirPlay",
+  "Телевизор": "Televisão",
+  "ТВ по умолчанию для всех": "TV padrão para todos",
+  "Не выбран: если ТВ один, то он": "Nenhuma: se houver só uma TV, essa",
+  "ТВ в этом браузере": "TV deste navegador",
+  "Как для всех": "Igual para todos",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "“Na TV” agora vai para a TV pelo Home Assistant",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Primeiro um comando ADB para o VLC ou Just Player, depois Google Cast, depois AirPlay. A TV padrão fica no servidor e vale para todos; a escolha neste navegador a substitui.",
+  "Загружаю список ТВ…": "Carregando a lista de TVs…",
+  "ТВ по умолчанию сохранён": "TV padrão salva"
 };

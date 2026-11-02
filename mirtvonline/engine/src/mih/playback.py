@@ -13,6 +13,10 @@ stream and fails with ``no_adapter``.
 MIH_PLAYBACK=ha, or ``adapter: "ha"`` in a request, skips the agent: MIH calls the
 user's Home Assistant script with the stream URLs and waits for it (mih.ha). The
 script ran = started, it raised or HA did not answer = failed with an ``ha_*`` error.
+MIH_PLAYBACK=tv (the add-on), or ``adapter: "tv"``: no script either. MIH starts the
+best stream on a TV of Home Assistant itself (mih.tv: ADB intent to VLC or Just Player,
+then Google Cast, then AirPlay). The command's device_id is the TV's media_player entity
+(none = the default TV); ``detail`` says which way started it.
 Each command keeps the times of its steps in ``stages`` (accepted, ha_called,
 ha_finished, started/failed) with no URLs or tokens.
 """
@@ -114,7 +118,7 @@ def create_command(
 
     streams = pick_streams(conn, target)
     now = utc_now()
-    waits = bool(streams) and mode in ("agent", "ha")
+    waits = bool(streams) and mode in ("agent", "ha", "tv")
     error = None if waits else ("no_adapter" if streams else "no_stream")
     cmd_id = new_id()
     # An HA command is never queued for the agent: it counts as taken at once and
@@ -126,7 +130,7 @@ def create_command(
         (cmd_id, device_id, json.dumps(target.as_dict()), streams[0] if streams else None,
          "accepted" if waits else "failed", idempotency_key, now,
          None if waits else now, error, mode if mode != "off" else None,
-         now if mode == "ha" else None,
+         now if mode in ("ha", "tv") else None,
          json.dumps({"accepted": _stamp()} | ({} if waits else {"failed": _stamp()}))),
     )  # fmt: skip
     return get_command(conn, cmd_id), True
@@ -302,19 +306,25 @@ def run_ha(
                             target.get("quality") or settings.play_quality)  # fmt: skip
         stages["ha_called"] = _stamp()
         try:
-            ha.run_script(settings, {
-                "url": urls[0],
-                "urls": urls,
-                "channel": channel_name,
-                "channel_id": target["channel_id"],
-                "stream_id": picked[0],
-                "command_id": cmd_id,
-                "play_url": play_url(settings, target["channel_id"]),
-                "program": target.get("title"),
-                "start_ts": target.get("start"),
-                "catchup_url": catchup_url,
-                "notify_service": ha.notify_entity(settings),
-            }, transport=transport)  # fmt: skip
+            if row["adapter"] == "tv":
+                from mih import tv
+
+                tv_id = row["device_id"] if row["device_id"] != "default" else None
+                detail = tv.launch(settings, tv_id, catchup_url or urls[0], transport=transport)
+            else:
+                ha.run_script(settings, {
+                    "url": urls[0],
+                    "urls": urls,
+                    "channel": channel_name,
+                    "channel_id": target["channel_id"],
+                    "stream_id": picked[0],
+                    "command_id": cmd_id,
+                    "play_url": play_url(settings, target["channel_id"]),
+                    "program": target.get("title"),
+                    "start_ts": target.get("start"),
+                    "catchup_url": catchup_url,
+                    "notify_service": ha.notify_entity(settings),
+                }, transport=transport)  # fmt: skip
         except ha.HaError as exc:
             error, detail = exc.code, exc.detail
         stages["ha_finished"] = _stamp()
@@ -324,7 +334,7 @@ def run_ha(
     # the household waits for it, from the button. A timeout is a slow open at least.
     if state == "started" or error == "ha_timeout":
         took = openspeed.ms_between(stages, "accepted", state)
-        openspeed.record(conn, target["channel_id"], took, source="ha",
+        openspeed.record(conn, target["channel_id"], took, source=row["adapter"] or "ha",
                          outcome="opened" if state == "started" else "slow",
                          stream_id=picked[0] if picked else None, command_id=cmd_id)  # fmt: skip
     conn.execute(

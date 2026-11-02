@@ -16,3 +16,8 @@
   `MIH_DISCOVERY_FRESH_DAYS` (default 60) sets how long the search starts over daily.
   Jobs of one process run strictly one at a time. Each catalog build logs its time and
   the peak memory; the data size is logged and shown on the status screen.
+- Launch on a TV without a script (`mih.tv`, `MIH_PLAYBACK=tv`, the add-on's default):
+  the TVs are HA's `media_player` entities grouped by device; a launch tries ADB
+  (`androidtv.adb_command`, VIEW intent to VLC, then Just Player), Google Cast, AirPlay,
+  then any player with `play_media`. `GET /api/v1/tv`, `PUT /api/v1/settings/tv` (the
+  default TV, in `app_settings`), `tv` in `POST /api/v1/playback/commands`.

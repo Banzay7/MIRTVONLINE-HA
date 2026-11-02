@@ -14,6 +14,7 @@ from starlette.datastructures import Headers
 
 from mih import ha as mih_ha
 from mih import openspeed, playback
+from mih import tv as mih_tv
 from mih.alerts import GRACE, best_streams, channel_names, find_matches, load_rules, play_key
 from mih.api import adult
 from mih.api.cache import respond
@@ -52,10 +53,18 @@ class PlaybackIn(BaseModel):
     target: PlaybackTargetIn
     device_id: str = Field(default="default", pattern="^[A-Za-z0-9_.-]{1,64}$")
     idempotency_key: str | None = Field(default=None, min_length=8, max_length=100)
-    # Who starts it: agent or ha; none = the server's MIH_PLAYBACK.
-    adapter: str | None = Field(default=None, pattern="^(agent|ha)$")
+    # Who starts it: agent, ha (the user's script) or tv (HA's media players); none =
+    # the server's MIH_PLAYBACK.
+    adapter: str | None = Field(default=None, pattern="^(agent|ha|tv)$")
+    # adapter tv: the TV (any of its media_player entities); none = the default TV.
+    tv: str | None = Field(default=None, pattern=mih_tv.ENTITY.pattern)
     # The picture to start with (mih.quality); none = MIH_PLAY_QUALITY.
     quality: str | None = Field(default=None, pattern="^(auto|720|1080|best)$")
+
+
+class TvDefaultIn(BaseModel):
+    # None clears it: with one TV in Home Assistant that one is used.
+    tv: str | None = Field(default=None, pattern=mih_tv.ENTITY.pattern)
 
 
 class OpenSpeedIn(BaseModel):
@@ -245,7 +254,7 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
         if t.channel_id in adult.hidden_ids(request, conn):
             raise error("adult_locked", "an adult channel: hidden by the 18+ setting")
         mode = body.adapter or settings.playback
-        if mode == "ha" and not settings.ha_ready:
+        if mode in ("ha", "tv") and not settings.ha_ready:
             raise error(
                 "validation_error", "Home Assistant is not set up (MIH_HA_URL, MIH_HA_TOKEN)"
             )
@@ -267,24 +276,30 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
             cmd, created = playback.create_command(
                 conn, playback.Target(t.kind, t.channel_id, t.feed_id, quality=body.quality,
                                       **extra),
-                device_id=body.device_id, idempotency_key=body.idempotency_key, mode=mode,
+                device_id=_device(conn, body, mode), idempotency_key=body.idempotency_key,
+                mode=mode,
             )  # fmt: skip
         except playback.PlaybackError as exc:
             raise error(exc.code, str(exc)) from exc
         if created and cmd["state"] == "accepted":
             name = channel_names(conn, {t.channel_id}).get(t.channel_id)
-            if mode == "ha":
+            if mode in ("ha", "tv"):
                 transport = getattr(request.app.state, "ha_transport", None)
                 cmd = playback.run_ha(conn, settings, cmd["id"], name, transport=transport)
             else:
                 playback.wake_agent(settings, cmd, name)
         return JSONResponse(status_code=202 if created else 200, content=cmd)
 
+    def _device(conn, body: PlaybackIn, mode: str) -> str:
+        if mode != "tv":
+            return body.device_id
+        return body.tv or mih_tv.default_tv(conn) or "default"
+
     @app.get("/api/v1/playback/adapters", dependencies=auth)
     def playback_adapters(request: Request) -> dict:
         """What the web UI may offer for "На ТВ"; the default is MIH_PLAYBACK."""
         settings = request.app.state.settings
-        available = ["agent"] + (["ha"] if settings.ha_ready else [])
+        available = ["agent"] + (["ha", "tv"] if settings.ha_ready else [])
         script = mih_ha.script_entity(settings) if settings.ha_ready else None
         return {"default": settings.playback, "available": available, "ha_script": script}
 
@@ -293,6 +308,29 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
         """Does Home Assistant answer, take the token and know the script? Runs nothing."""
         return mih_ha.check(request.app.state.settings,
                             transport=getattr(request.app.state, "ha_transport", None))  # fmt: skip
+
+    @app.get("/api/v1/tv", dependencies=auth)
+    def list_tvs(request: Request, conn: Conn) -> dict:
+        """The TVs of Home Assistant (media players grouped by device) and the default
+        one. When HA cannot be asked, the list is empty and ``error`` says why."""
+        settings = request.app.state.settings
+        items, err = [], None
+        try:
+            items = [
+                t.as_dict()
+                for t in mih_tv.list_tvs(
+                    settings, transport=getattr(request.app.state, "ha_transport", None)
+                )
+            ]
+        except mih_ha.HaError as exc:
+            err = exc.code
+        return {"items": items, "default": mih_tv.default_tv(conn), "error": err}
+
+    @app.put("/api/v1/settings/tv", dependencies=auth)
+    def set_default_tv(body: TvDefaultIn, conn: Conn) -> dict:
+        """The TV "На ТВ" goes to for everyone whose browser picked none."""
+        mih_tv.set_default_tv(conn, body.tv)
+        return {"default": mih_tv.default_tv(conn)}
 
     def _open_settings(conn) -> dict:
         return {"slow_s": openspeed.threshold_s(conn), "default_s": openspeed.default_slow_s(),

@@ -15,7 +15,7 @@ ALERT_LINKS = ("auto", "play", "stream", "none")
 # Event levels, lowest first. "routine" events only go to the feed and the daily digest.
 LEVELS = ("routine", "info", "warning", "error")
 # Who carries out "На ТВ": the agent over MCP, Home Assistant directly, or nobody.
-PLAYBACKS = ("agent", "ha", "off")
+PLAYBACKS = ("agent", "ha", "tv", "off")
 
 
 class ConfigError(ValueError):
@@ -147,8 +147,10 @@ class Settings:
     mcp_token: str | None = None
     mcp_daily_limit: int = 0
     # Who carries out the web UI's "На ТВ": agent (the command waits for the agent to take
-    # it over MCP, docs/agent.md) or off (the stream is picked, nothing is started). Off in
-    # this dataclass; from_env defaults to agent. An optional webhook wakes the agent.
+    # it over MCP, docs/agent.md), ha (the user's HA script), tv (HA's own media players,
+    # mih.tv: ADB, Cast, AirPlay; no script needed) or off (the stream is picked, nothing
+    # is started). Off in this dataclass; from_env defaults to agent. An optional webhook
+    # wakes the agent.
     playback: str = "off"
     agent_webhook: str | None = None
     agent_webhook_token: str | None = None
@@ -277,8 +279,8 @@ class Settings:
         """Spec 23: never serve without a token, except on loopback for local development."""
         if self.ha_url and not self.ha_url.startswith(("http://", "https://")):
             raise ConfigError("MIH_HA_URL must start with http:// or https://")
-        if self.playback == "ha" and not self.ha_ready:
-            raise ConfigError("MIH_PLAYBACK=ha needs MIH_HA_URL and MIH_HA_TOKEN")
+        if self.playback in ("ha", "tv") and not self.ha_ready:
+            raise ConfigError(f"MIH_PLAYBACK={self.playback} needs MIH_HA_URL and MIH_HA_TOKEN")
         if self.workers > 1 and self.scheduler_enabled and self.scheduler_mode == "thread":
             raise ConfigError("MIH_WORKERS > 1 needs MIH_SCHEDULER_MODE=process")
         try:
