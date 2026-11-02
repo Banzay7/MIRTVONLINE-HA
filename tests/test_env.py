@@ -21,6 +21,12 @@ def test_defaults_are_profile_s_and_russian(tmp_path):
     assert env["MIH_HEALTH_CONCURRENCY"] == "4"
     assert env["MIH_SCHEDULER_MODE"] == "thread"
     assert env["MIH_EPG_SCOPE"] == "tracked"
+    # Light mode (load estimate §7).
+    assert env["MIH_CATALOG_EVERY"] == "1h"
+    assert env["MIH_JOB_NICE"] == "10"
+    assert env["MIH_EPG_AT"] == "03:30"
+    assert env["MIH_EVERY_HEALTH"] == "7d"
+    assert env["MIH_DISCOVERY_FRESH_DAYS"] == "3"
     assert env["MIH_BIND_PORT"] == "8765"
     assert env["MIH_INGRESS_PROXY"] == "172.30.32.2"
     assert "MIH_HA_URL" not in env

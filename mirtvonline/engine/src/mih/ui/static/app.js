@@ -1146,6 +1146,18 @@ function discoveryBlock(d) {
       <span class="muted">${t("Каналов из найденного")}</span><span>${t("{0}, рабочих потоков {1} из {2}", d.auto_channels, d.auto_working, d.auto_streams)}</span>
     </div>`;
 }
+function storageBlock(disk, build) {
+  if (!disk) return "";
+  const mb = (n) => t("{0} МБ", Math.round((n || 0) / 1e6));
+  return html`<h2>${t("Данные на диске")}</h2>
+    <div class="kv small">
+      <span class="muted">${t("Всего")}</span><span>${mb(disk.total)}</span>
+      <span class="muted">${t("База данных")}</span><span>${mb(disk.database)}</span>
+      <span class="muted">${t("Снимки и выгрузки")}</span><span>${mb(disk.snapshots + disk.export)}</span>
+      <span class="muted">${t("Прочее")}</span><span>${mb(disk.other)}</span>
+      ${build && build.built_at ? html`<span class="muted">${t("Последняя сборка каталога")}</span><span>${whenShort(build.built_at)}: ${t("{0} с, пик памяти {1} МБ", build.seconds, build.peak_mb)}</span>` : ""}
+    </div>`;
+}
 const LEVEL_ICON = { routine: "·", info: "●", warning: "▲", error: "✖" };
 const JOB_STATUS = { ok: t("успешно"), warning: t("с предупреждениями"), error: t("ошибка") };
 
@@ -1193,6 +1205,7 @@ async function viewStatus() {
       <div class="actions"><button class="btn" type="button" data-run-job="${j.name}" ${j.running_since ? raw("disabled") : ""}>${t("Запустить")}</button></div>
     </article>`)}</div>
     ${discoveryBlock(s.discovery)}
+    ${storageBlock(s.disk, s.catalog_build)}
     <h2>${t("План на сутки")}</h2>
     ${s.plan.length ? html`<ul class="schedule">${s.plan.map((p) => html`<li><time>${time(p.next_at)}</time><span>${JOB_NAMES[p.job] || p.job}${p.every_minutes && p.runs.length > 4
         ? t(", каждые {0}", everyText(p.every_minutes))

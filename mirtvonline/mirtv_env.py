@@ -21,16 +21,25 @@ HA_URL = "http://supervisor/core"
 # Home Assistant has already checked the user, so MIH asks it for no token.
 INGRESS_PROXY = "172.30.32.2"
 
-# Schedules per data profile (MIH_HA_LOAD_ESTIMATE, §2 and §7): rare updates, one job
-# at a time in the server's own process, few parallel stream checks.
+# Light mode (load estimate §7): one job at a time in the server's own process, at a
+# lower priority than the web UI; the catalog rebuilt only when its data changed and at
+# most hourly; rare updates; few parallel stream checks.
 COMMON = {
     "MIH_SCHEDULER_MODE": "thread",
+    "MIH_JOB_NICE": "10",
+    "MIH_CATALOG_EVERY": "1h",
     "MIH_EPG_SCOPE": "tracked",
     "MIH_EPG_RETENTION_DAYS": "3",
     "MIH_HISTORY_DAYS": "90",
+    # Playlists you added: daily. The guide: daily at night.
     "MIH_EVERY_SOURCES": "24h",
     "MIH_EVERY_EPG": "24h",
-    "MIH_EVERY_HEALTH": "1h",
+    "MIH_EPG_AT": "03:30",
+    # Re-check of working streams: weekly.
+    "MIH_EVERY_HEALTH": "7d",
+    # The playlist search starts over daily for the first 3 days, then monthly; the
+    # scout and packer keep working through what it found.
+    "MIH_DISCOVERY_FRESH_DAYS": "3",
     "MIH_HEALTH_PER_SOURCE": "1",
     "MIH_WORKERS": "1",
     # Launch on a TV comes in a later version; until then "На ТВ" only picks the stream.

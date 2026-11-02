@@ -456,5 +456,13 @@
   "открывается медленно": "yavaş açılıyor",
   "открывается нормально": "normal açılıyor",
   "открывается очень медленно": "çok yavaş açılıyor",
-  "плеер": "oynatıcı"
+  "плеер": "oynatıcı",
+  "Данные на диске": "Diskteki veriler",
+  "База данных": "Veritabanı",
+  "Снимки и выгрузки": "Anlık görüntüler ve dışa aktarımlar",
+  "Прочее": "Diğer",
+  "Всего": "Toplam",
+  "Последняя сборка каталога": "Son katalog oluşturma",
+  "{0} МБ": "{0} MB",
+  "{0} с, пик памяти {1} МБ": "{0} sn, en yüksek bellek {1} MB"
 };

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -348,6 +349,15 @@ def _serve(settings: Settings) -> int:
     import uvicorn
 
     from mih.api.app import create_app
+
+    # The jobs' own lines (catalog build time, peak memory, data size) in the service log.
+    mih_log = logging.getLogger("mih")
+    if not mih_log.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        mih_log.addHandler(handler)
+        mih_log.setLevel(logging.INFO)
+        mih_log.propagate = False
 
     if settings.mcp_port is not None:
         import threading
