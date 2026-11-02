@@ -1,5 +1,7 @@
-ARG BUILD_FROM=python:3.12-slim-bookworm
-FROM ${BUILD_FROM}
+# The base image is fixed here on purpose. Newer Supervisor versions ignore build.yaml
+# and pass BUILD_FROM=ghcr.io/home-assistant/base (Alpine without Python), so the
+# Dockerfile must not take its base from that argument.
+FROM docker.io/library/python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
