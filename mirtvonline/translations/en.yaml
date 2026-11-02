@@ -1,0 +1,23 @@
+configuration:
+  language:
+    name: Interface language
+    description: Language of the web UI and of the notifications.
+  profile:
+    name: Data profile
+    description: >-
+      S: one country and language, works on any 4 GB box (HA Green).
+      M: several countries, needs a Raspberry Pi 5 or a mini PC.
+      L: the whole world, mini PC only.
+  home_country:
+    name: Home country
+    description: >-
+      Two letters, e.g. de. Channels of this country are kept even if they look
+      blocked from here. Empty: the setup wizard asks.
+  timezone:
+    name: Time zone
+    description: For the TV guide, e.g. Europe/Berlin. Empty uses the time zone of Home Assistant.
+  github_token:
+    name: GitHub token
+    description: >-
+      Optional. Any token without scopes; lets the playlist search use GitHub code
+      search. Without it only repository search runs.

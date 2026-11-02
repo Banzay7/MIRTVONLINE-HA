@@ -1,0 +1,251 @@
+"""MCP server: compact tools for an agent, over HTTP on its own port and over stdio."""
+
+import io
+import json
+
+import pytest
+from fastapi.testclient import TestClient
+
+from mih import db
+from mih.config import ConfigError, Settings
+from mih.mcp.server import McpServer, create_mcp_app, run_stdio
+from mih.mcp.tools import Toolbox
+from tests.test_alerts import NOW, M, _follow, _guide, _load, _p
+
+TOKEN = "m" * 32
+
+
+@pytest.fixture
+def settings(tmp_path):
+    return Settings(data_dir=tmp_path, epg_scope="all", timezone="Europe/Moscow",
+                    mcp_token=TOKEN)  # fmt: skip
+
+
+@pytest.fixture
+def conn(settings):
+    c = db.connect(settings.db_path)
+    db.migrate(c)
+    _load(c, settings, _guide(
+        _p("Perviy.ru", -10 * M, 40, "Новости"),
+        _p("Perviy.ru", 30 * M, 90, "Футбол. Премьер-лига", sub="Зенит — Спартак"),
+        _p("Perviy.ru", 26 * 60 * M, 60, "Футбол. Обзор"),
+        _p("Euronews.fr", -5 * M, 30, "Euronews Live"),
+    ))  # fmt: skip
+    # Every stream played an hour ago: level ok.
+    c.execute("UPDATE streams SET status = 'active', last_ok_at = ?",
+              ((NOW - 60 * M).strftime("%Y-%m-%dT%H:%M:%SZ"),))  # fmt: skip
+    yield c
+    c.close()
+
+
+def _ch(box, conn, q):
+    return box.call(conn, "channels", {"q": q}, NOW)["items"][0]
+
+
+def test_channels_by_spoken_name_with_now_and_next(conn, settings):
+    box = Toolbox(settings)
+    first = _ch(box, conn, "первый")
+    # 16:00 UTC is 19:00 in Moscow: "till" is local time, today without a date.
+    assert first == {"id": first["id"], "name": "Первый канал HD", "lvl": "ok",
+                     "now": "Новости", "till": "19:30",
+                     "next": "Футбол. Премьер-лига", "at": "19:30"}  # fmt: skip
+    assert _ch(box, conn, "1tv")["id"] == first["id"]  # a popular name
+    assert _ch(box, conn, "euronews")["name"].startswith("Euronews")
+    assert box.call(conn, "channels", {"q": "нет такого"}, NOW)["items"] == []
+
+
+def test_search_play_report_round_trip(conn, settings):
+    box = Toolbox(settings)
+    found = box.call(conn, "search", {"q": "футбол"}, NOW)
+    assert found["tz"] == "Europe/Moscow"
+    titles = [(i["title"], i["at"]) for i in found["items"]]
+    assert ("Футбол. Премьер-лига", "19:30") in titles
+    assert ("Футбол. Обзор", "10-27 21:00") in titles  # another day: month-day first
+    item = found["items"][0]
+    assert set(item) <= {"title", "sub", "ch", "cid", "at", "end", "more"}
+
+    played = box.call(conn, "play", {"id": item["cid"]}, NOW)
+    best = played["streams"][0]
+    assert best["url"].startswith("https://a.example/live/1tv/") and "ua" not in best
+    assert len(played["streams"]) <= 3 and "m3u" not in played  # no MIH_PUBLIC_URL
+
+    out = box.call(conn, "report", {"stream_id": best["stream_id"], "ok": False,
+                                    "error": "timeout"}, NOW)  # fmt: skip
+    assert out["stream_id"] == best["stream_id"]
+    n = conn.execute("SELECT COUNT(*) FROM stream_observations WHERE stream_id = ?"
+                     " AND kind = 'playback'", (best["stream_id"],)).fetchone()[0]  # fmt: skip
+    assert n == 1
+
+    # A success with its start-up time rates how fast the channel opens.
+    box.call(conn, "report", {"stream_id": best["stream_id"], "ok": True, "ms": 2100}, NOW)
+    from mih import openspeed
+
+    assert openspeed.summary(conn)[item["cid"]]["ms"] == 2100
+
+
+def test_headers_are_handed_to_the_player(conn, settings):
+    box = Toolbox(settings)
+    vtv = _ch(box, conn, "vtv1")
+    s = box.call(conn, "play", {"id": vtv["id"]}, NOW)["streams"][0]
+    assert s["ua"] == "SomePlayer/1.0" and s["ref"] == "https://a.example/"
+
+
+def test_now_schedule_topics_status(conn, settings):
+    box = Toolbox(settings)
+    now = box.call(conn, "now", {}, NOW)
+    assert {i["name"]: i["now"] for i in now["items"]}["Первый канал HD"] == "Новости"
+    first = _ch(box, conn, "первый")["id"]
+    sched = box.call(conn, "schedule", {"id": first, "hours": 3}, NOW)
+    assert [i["title"] for i in sched["items"]] == ["Новости", "Футбол. Премьер-лига"]
+    tomorrow = box.call(conn, "schedule", {"id": first, "day": "tomorrow", "hours": 24}, NOW)
+    assert [i["at"] for i in tomorrow["items"]] == ["10-27 21:00"]
+
+    _follow(conn, "хоккей")
+    t = box.call(conn, "topics", {"add": "ФУТБОЛ", "remove": "хоккей"}, NOW)
+    assert t["topics"] == ["футбол"]
+    assert [s["title"] for s in t["soon"]] == ["Футбол. Премьер-лига"]
+
+    st = box.call(conn, "status", {}, NOW)
+    assert st["channels"] >= 3 and st["playing"]["ok"] >= 3
+
+
+def test_http_needs_token_and_answers_json_rpc(conn, settings):
+    client = TestClient(create_mcp_app(settings))
+    rpc = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+           "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                      "clientInfo": {"name": "t", "version": "1"}}}  # fmt: skip
+    assert client.post("/mcp", json=rpc).status_code == 401
+    h = {"Authorization": f"Bearer {TOKEN}"}
+    init = client.post("/mcp", json=rpc, headers=h).json()["result"]
+    assert init["protocolVersion"] == "2025-06-18" and "tools" in init["capabilities"]
+    note = {"jsonrpc": "2.0", "method": "notifications/initialized"}
+    assert client.post("/mcp", json=note, headers=h).status_code == 202
+    tools = client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                        headers=h).json()["result"]["tools"]  # fmt: skip
+    assert [t["name"] for t in tools] == ["channels", "search", "now", "schedule", "play",
+                                          "report", "queue", "topics", "status"]  # fmt: skip
+    bad = client.post("/mcp", json={"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                                    "params": {"name": "schedule", "arguments": {"id": "x"}}},
+                      headers=h).json()["result"]  # fmt: skip
+    assert bad["isError"] and "channels" in bad["content"][0]["text"]
+    # A page in a browser on the same host cannot talk to it.
+    evil = client.post("/mcp", json=rpc, headers={**h, "Origin": "https://evil.example"})
+    assert evil.status_code == 403
+    assert client.get("/mcp", headers=h).status_code == 405
+
+
+def test_stdio_and_daily_limit(conn, settings):
+    lim = Settings(**{**settings.__dict__, "mcp_daily_limit": 1})
+    lines = [
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+         "params": {"name": "channels", "arguments": {"q": "первый", "limit": 1}}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+         "params": {"name": "status", "arguments": {}}},
+    ]  # fmt: skip
+    out = io.StringIO()
+    run_stdio(lim, io.StringIO("".join(json.dumps(x) + "\n" for x in lines)), out)
+    first, second = (json.loads(x) for x in out.getvalue().splitlines())
+    items = json.loads(first["result"]["content"][0]["text"])["items"]
+    assert items[0]["name"] == "Первый канал HD"
+    assert second["error"]["code"] == -32000  # the day's one call is spent
+
+
+def test_index_follows_catalog_changes(conn, settings):
+    server = McpServer(settings)
+    box = server.toolbox
+    assert box.find_channels(conn, "первый")
+    conn.execute(
+        "INSERT INTO channels (id, canonical_name, created_at) VALUES ('ch_x', 'Звезда', 'x')"
+    )
+    assert "ch_x" in box.find_channels(conn, "звезда")
+
+
+def test_mcp_off_loopback_needs_a_token(tmp_path):
+    s = Settings(data_dir=tmp_path, mcp_port=8766, mcp_host="0.0.0.0")
+    with pytest.raises(ConfigError):
+        s.validate_for_serving()
+    Settings(data_dir=tmp_path, mcp_port=8766).validate_for_serving()  # loopback: fine
+
+
+def test_tv_button_is_carried_out_by_the_agent(conn, settings):
+    from datetime import UTC, datetime
+
+    from mih import playback
+
+    box = Toolbox(settings)
+    first = _ch(box, conn, "первый")["id"]
+    target = playback.Target("channel", first)
+    now = datetime.now(UTC)  # commands are timed by the real clock
+    later = now + playback.RUN * 2
+
+    # Silence means it plays: the first offered stream counts as seen on the TV.
+    cmd, _ = playback.create_command(conn, target, mode="agent")
+    assert cmd["state"] == "accepted" and cmd["error"] is None
+    (job,) = box.call(conn, "queue", {}, now)["items"]
+    assert job["cmd"] == cmd["id"] and job["name"] == "Первый канал HD"
+    assert box.call(conn, "queue", {}, now)["items"] == []  # handed out once
+    assert playback.get_command(conn, cmd["id"])["taken"]
+    playback.expire(conn, later)
+    done = playback.get_command(conn, cmd["id"])
+    first_sid = job["streams"][0]["stream_id"]
+    assert done["state"] == "started" and done["stream_id"] == first_sid
+    seen = conn.execute(
+        "SELECT COUNT(*) FROM stream_observations WHERE stream_id = ?"
+        " AND kind = 'playback' AND success = 1",
+        (first_sid,),
+    ).fetchone()[0]
+    assert seen == 1
+
+    # The first fails, the spare plays (silence): the spare is the one that started.
+    cmd, _ = playback.create_command(conn, target, mode="agent")
+    (job,) = box.call(conn, "queue", {}, now)["items"]
+    sids = [x["stream_id"] for x in job["streams"]]
+    assert len(sids) >= 2
+    out = box.call(conn, "report", {"stream_id": sids[0], "ok": False, "error": "timeout",
+                                    "cmd": cmd["id"]}, now)  # fmt: skip
+    assert out["cmd"] == "accepted"  # still trying spares
+    playback.expire(conn, later)
+    assert playback.get_command(conn, cmd["id"])["stream_id"] == sids[1]
+
+    # Every offered stream failed: the command failed at once.
+    cmd, _ = playback.create_command(conn, target, mode="agent")
+    (job,) = box.call(conn, "queue", {}, now)["items"]
+    for x in job["streams"]:
+        box.call(conn, "report", {"stream_id": x["stream_id"], "ok": False,
+                                  "cmd": cmd["id"]}, now)  # fmt: skip
+    assert playback.get_command(conn, cmd["id"])["state"] == "failed"
+
+    # The last one only timed out: the TV is still loading it, started but unconfirmed.
+    cmd, _ = playback.create_command(conn, target, mode="agent")
+    (job,) = box.call(conn, "queue", {}, now)["items"]
+    errors = ["player_error"] * (len(job["streams"]) - 1) + ["timeout"]
+    for x, err in zip(job["streams"], errors, strict=True):
+        box.call(conn, "report", {"stream_id": x["stream_id"], "ok": False, "error": err,
+                                  "cmd": cmd["id"]}, now)  # fmt: skip
+    slow = playback.get_command(conn, cmd["id"])
+    assert slow["state"] == "started" and slow["detail"] == "unconfirmed"
+    assert slow["stream_id"] == job["streams"][-1]["stream_id"]
+
+    # Nobody takes it: the UI hears "no agent" after PICKUP.
+    lost, _ = playback.create_command(conn, target, mode="agent")
+    playback.expire(conn, datetime.now(UTC) + playback.PICKUP * 2)
+    assert playback.get_command(conn, lost["id"])["error"] == "no_agent"
+    # Off: nothing waits, as before.
+    off, _ = playback.create_command(conn, target)
+    assert off["error"] == "no_adapter"
+
+
+def test_the_tv_button_starts_with_the_quality_asked(conn, settings, monkeypatch):
+    from mih import playback
+    from mih.mcp import tools
+
+    asked = []
+    monkeypatch.setattr(tools, "resolve_many",
+                        lambda s, items, q: asked.append(q) or [u for u, _ in items])  # fmt: skip
+    box = Toolbox(settings)
+    first = _ch(box, conn, "первый")["id"]
+    playback.create_command(conn, playback.Target("channel", first, quality="best"), mode="agent")
+    box.call(conn, "queue", {}, None)
+    box.call(conn, "play", {"id": first}, None)
+    assert asked == ["best", settings.play_quality]

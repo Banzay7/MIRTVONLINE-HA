@@ -1,0 +1,31 @@
+name: MIRTVONLINE
+version: "0.1.0"
+slug: mirtvonline
+description: Catalog, TV guide and search for live TV channels from your own and public playlists
+url: https://github.com/Banzay7/MIRTVONLINE-HA
+arch:
+  - aarch64
+  - amd64
+# No prebuilt image: Home Assistant builds it from this folder on install and on
+# Update (a few minutes; nothing is downloaded from a registry).
+ingress: true
+ingress_port: 8765
+panel_icon: mdi:television-classic
+panel_title: MIRTVONLINE
+# Supervisor token for calling Home Assistant services (launch on a TV).
+homeassistant_api: true
+# No ports are published: the web UI is reachable only through Ingress.
+backup_exclude:
+  - snapshots
+  - snapshots/*
+  - export
+  - export/*
+options:
+  language: ru
+  profile: S
+schema:
+  language: list(ru|en|vi)
+  profile: list(S|M|L)
+  home_country: match(^[A-Za-z]{2}$)?
+  timezone: str?
+  github_token: password?

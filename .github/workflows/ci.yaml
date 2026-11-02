@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add-on linter
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./mirtvonline
+      - name: ShellCheck
+        run: shellcheck mirtvonline/run.sh
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q tests
+
+  engine:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mirtvonline/engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[dev]'
+      - run: pytest -q tests
+
+  # Home Assistant builds the image itself on install; this checks that the build
+  # works and the add-on answers. amd64 only: fast, and the engine is pure Python.
+  build-amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./mirtvonline
+          platforms: linux/amd64
+          load: true
+          tags: mirtvonline:ci
+          build-args: |
+            BUILD_ARCH=amd64
+            BUILD_VERSION=ci
+      - name: Start and answer
+        run: |
+          mkdir -p data
+          echo '{"language": "en", "profile": "S"}' > data/options.json
+          docker run -d --name addon -v "$PWD/data:/data" -e TZ=UTC \
+            -e MIH_SCHEDULER=0 -p 127.0.0.1:8765:8765 mirtvonline:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/api/v1/health/live; then exit 0; fi
+            sleep 2
+          done
+          docker logs addon
+          exit 1
+      - name: Log
+        if: always()
+        run: docker logs addon || true
