@@ -16,7 +16,8 @@ from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import Depends, FastAPI, File, HTTPException, Path, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from starlette.middleware.gzip import GZipMiddleware
@@ -24,9 +25,9 @@ from starlette.middleware.gzip import GZipMiddleware
 from mih import __version__, db, openspeed
 from mih.api import adult, personal
 from mih.api.cache import SharedCache, data_version, respond
-from mih.api.guard import Guard
+from mih.api.guard import Guard, from_ingress
 from mih.categories import MAX_MANUAL, check_manual, clear_override, set_override
-from mih.config import Settings
+from mih.config import Settings, parse_networks
 from mih.epg import guide
 from mih.epg.coverage import working_coverage
 from mih.epg.importer import EPGImportReport, import_xmltv, iso
@@ -157,6 +158,8 @@ def require_token(
     token = request.app.state.settings.api_token
     if token is None:
         return  # loopback-only development mode, enforced by Settings.validate_for_serving
+    if from_ingress(request.scope, request.app.state.ingress):
+        return  # Home Assistant has already checked the user
     if creds is None or not hmac.compare_digest(creds.credentials, token):
         raise HTTPException(status_code=401, detail="invalid or missing token")
 
@@ -167,6 +170,8 @@ def require_token_or_query(
     token: Annotated[str | None, Query()] = None,
 ) -> None:
     """Like require_token, but a player that cannot send headers may pass ?token=."""
+    if from_ingress(request.scope, request.app.state.ingress):
+        return
     if token is not None and request.app.state.settings.api_token is not None:
         if hmac.compare_digest(token, request.app.state.settings.api_token):
             return
@@ -196,9 +201,16 @@ def create_app(settings: Settings, health_policy: HealthPolicy | None = None) ->
         with background(settings, health_policy):
             yield
 
-    app = FastAPI(title="MIRTVONLINE API", version=__version__, docs_url="/api/docs",
+    app = FastAPI(title="MIRTVONLINE API", version=__version__, docs_url=None,
                   openapi_url="/api/v1/openapi.json", lifespan=lifespan)  # fmt: skip
     app.state.settings = settings
+    app.state.ingress = parse_networks(settings.ingress_proxy)
+
+    @app.get("/api/docs", include_in_schema=False)
+    def docs() -> HTMLResponse:
+        # A relative schema address: behind HA Ingress the site lives under a path prefix.
+        return get_swagger_ui_html(openapi_url="v1/openapi.json", title=f"{app.title} - docs")
+
     app.state.pool = pool = ConnPool(settings.db_path)
 
     def probe() -> str:
@@ -213,7 +225,8 @@ def create_app(settings: Settings, health_policy: HealthPolicy | None = None) ->
     app.add_middleware(_Gzip)
     # Outermost: a refused request costs nothing else.
     app.add_middleware(Guard, rate_limit=settings.rate_limit, auth_fails=settings.auth_fails,
-                       trusted_proxies=settings.trusted_proxies)  # fmt: skip
+                       trusted_proxies=settings.trusted_proxies,
+                       ingress=bool(app.state.ingress))  # fmt: skip
 
     auth = [Depends(require_token)]
 

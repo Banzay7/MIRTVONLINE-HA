@@ -5,7 +5,8 @@
 
 translateShell();
 
-const API = "/api/v1";
+// Relative: behind Home Assistant Ingress the site lives under /api/hassio_ingress/<id>/.
+const API = "api/v1";
 const PROFILE = "default";
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 const view = document.getElementById("view");
@@ -535,7 +536,7 @@ async function viewHome() {
     return html`<h1>${t("Сейчас в эфире")}</h1>
       <div class="empty"><p>${t("Каталог пока пуст.")}</p>
       <p class="small">${t("Добавьте свой плейлист и программу передач (EPG): командой")}
-      <code>mih import-file</code> ${t("или через API, см.")} <a href="/api/docs">${t("документацию API")}</a>.</p></div>`;
+      <code>mih import-file</code> ${t("или через API, см.")} <a href="api/docs">${t("документацию API")}</a>.</p></div>`;
   }
   const favIds = [...state.favorites].filter((k) => k.startsWith("channel:")).map((k) => k.slice(8));
   const favNow = favIds.length
@@ -1122,7 +1123,7 @@ async function viewSettings() {
         html`<label class="row"><input type="radio" name="quality" value="${v}" ${(store.get("mih.quality") || "720") === v ? raw("checked") : ""}> ${label}</label>`)}
       <span class="small muted">${t("Для потоков с несколькими качествами сервер отдаёт телевизору подходящее. Выбор хранится в этом браузере.")}</span>
     </div>
-    <p class="small"><a href="/api/docs">${t("Документация API")}</a></p>`;
+    <p class="small"><a href="api/docs">${t("Документация API")}</a></p>`;
 }
 
 // ---------- Status: what the service does, did and plans ----------

@@ -29,6 +29,6 @@ Home Assistant backups include the database; snapshots and exports are left out.
 
 ## Status
 
-Early version. Not yet done: opening through the sidebar without a token prompt
-(Ingress support in the engine), a light mode for weak boxes, launch on a TV,
-the first-run wizard.
+Early version. The site opens from the sidebar (MIRTVONLINE) with no token: Home
+Assistant has already checked who you are. Not yet done: a light mode for weak boxes,
+launch on a TV, the first-run wizard.

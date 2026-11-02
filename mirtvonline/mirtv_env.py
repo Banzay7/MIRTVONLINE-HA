@@ -17,6 +17,9 @@ DATA_DIR = Path(os.environ.get("MIRTV_DATA_DIR", "/data"))
 # Inside the add-on Home Assistant Core is reached through the Supervisor proxy,
 # with the token the Supervisor gives every add-on that sets homeassistant_api.
 HA_URL = "http://supervisor/core"
+# The Supervisor's Ingress proxy: the only address the sidebar panel's requests come from.
+# Home Assistant has already checked the user, so MIH asks it for no token.
+INGRESS_PROXY = "172.30.32.2"
 
 # Schedules per data profile (MIH_HA_LOAD_ESTIMATE, §2 and §7): rare updates, one job
 # at a time in the server's own process, few parallel stream checks.
@@ -51,8 +54,8 @@ def load_options(data_dir: Path) -> dict:
 def api_token(data_dir: Path) -> str:
     """A random token kept in /data, so MIH may listen on the add-on network.
 
-    Home Assistant already checks who opens the panel; the token only keeps other
-    containers on the same network out until MIH trusts the Ingress proxy itself.
+    The sidebar panel (Ingress) needs no token; it keeps every other container on the
+    same network out.
     """
     path = data_dir / ".api_token"
     if path.exists():
@@ -81,6 +84,7 @@ def build_env(options: dict, environ: dict[str, str], data_dir: Path) -> dict[st
     env["MIH_BIND_HOST"] = "0.0.0.0"
     env["MIH_BIND_PORT"] = "8765"
     env["MIH_API_TOKEN"] = api_token(data_dir)
+    env["MIH_INGRESS_PROXY"] = INGRESS_PROXY
     # Time zone: the option, else the one the Supervisor passes to every add-on.
     env["MIH_TIMEZONE"] = (options.get("timezone") or environ.get("TZ") or "UTC").strip()
 
