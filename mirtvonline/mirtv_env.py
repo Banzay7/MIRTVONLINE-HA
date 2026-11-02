@@ -42,7 +42,7 @@ COMMON = {
     "MIH_DISCOVERY_FRESH_DAYS": "3",
     "MIH_HEALTH_PER_SOURCE": "1",
     "MIH_WORKERS": "1",
-    # Launch on a TV comes in a later version; until then "На ТВ" only picks the stream.
+    # Without Home Assistant (a test run) "На ТВ" only picks the stream.
     "MIH_PLAYBACK": "off",
 }
 PROFILES = {
@@ -107,6 +107,8 @@ def build_env(options: dict, environ: dict[str, str], data_dir: Path) -> dict[st
     if supervisor_token:
         env["MIH_HA_URL"] = HA_URL
         env["MIH_HA_TOKEN"] = supervisor_token
+        # "На ТВ" starts the channel on a TV of Home Assistant itself (ADB, Cast, AirPlay).
+        env["MIH_PLAYBACK"] = "tv"
     return env
 
 

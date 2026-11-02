@@ -464,5 +464,22 @@
   "Всего": "Total",
   "Последняя сборка каталога": "Dernière construction du catalogue",
   "{0} МБ": "{0} Mo",
-  "{0} с, пик памяти {1} МБ": "{0} s, pic mémoire {1} Mo"
+  "{0} с, пик памяти {1} МБ": "{0} s, pic mémoire {1} Mo",
+  "Включаю на ТВ: {0}": "Lancement sur la TV : {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "Aucune TV choisie : choisissez-la dans Paramètres (Le bouton « Sur la TV »).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "Home Assistant ne voit aucune TV. Ajoutez la TV à HA : intégration Android Debug Bridge ou Google Cast.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "La TV choisie n’est plus dans Home Assistant : choisissez-en une autre dans Paramètres.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "La TV est indisponible dans Home Assistant : branchez-la ou vérifiez l’intégration.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "La TV n’a ni VLC ni Just Player : installez l’un des deux depuis Google Play.",
+  "Home Assistant не смог включить канал на ТВ": "Home Assistant n’a pas pu lancer la chaîne sur la TV",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Directement sur la TV via Home Assistant : ADB, Google Cast, AirPlay",
+  "Телевизор": "Téléviseur",
+  "ТВ по умолчанию для всех": "TV par défaut pour tous",
+  "Не выбран: если ТВ один, то он": "Aucune : s’il n’y a qu’une TV, celle-ci",
+  "ТВ в этом браузере": "TV de ce navigateur",
+  "Как для всех": "Comme pour tous",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "« Sur la TV » passe maintenant par Home Assistant",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "D’abord une commande ADB vers VLC ou Just Player, puis Google Cast, puis AirPlay. La TV par défaut est enregistrée sur le serveur et vaut pour tous ; le choix dans ce navigateur la remplace.",
+  "Загружаю список ТВ…": "Chargement de la liste des TV…",
+  "ТВ по умолчанию сохранён": "TV par défaut enregistrée"
 };

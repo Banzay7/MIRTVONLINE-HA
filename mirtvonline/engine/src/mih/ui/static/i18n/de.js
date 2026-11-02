@@ -464,5 +464,22 @@
   "Всего": "Gesamt",
   "Последняя сборка каталога": "Letzter Katalogaufbau",
   "{0} МБ": "{0} MB",
-  "{0} с, пик памяти {1} МБ": "{0} s, Spitzenspeicher {1} MB"
+  "{0} с, пик памяти {1} МБ": "{0} s, Spitzenspeicher {1} MB",
+  "Включаю на ТВ: {0}": "Wird auf dem TV gestartet: {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "Kein TV gewählt: wählen Sie ihn in den Einstellungen (Die Schaltfläche „Am TV“).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "Home Assistant sieht keinen TV. Fügen Sie den TV in HA hinzu: Integration Android Debug Bridge oder Google Cast.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "Der gewählte TV ist nicht mehr in Home Assistant: wählen Sie in den Einstellungen einen anderen.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "Der TV ist in Home Assistant nicht verfügbar: Strom prüfen oder die Integration prüfen.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "Auf dem TV ist weder VLC noch Just Player: installieren Sie eines davon aus Google Play.",
+  "Home Assistant не смог включить канал на ТВ": "Home Assistant konnte den Sender nicht auf dem TV starten",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Direkt auf den TV über Home Assistant: ADB, Google Cast, AirPlay",
+  "Телевизор": "Fernseher",
+  "ТВ по умолчанию для всех": "Standard-TV für alle",
+  "Не выбран: если ТВ один, то он": "Keiner gewählt: bei nur einem TV dieser",
+  "ТВ в этом браузере": "TV in diesem Browser",
+  "Как для всех": "Wie für alle",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "„Am TV“ geht jetzt über Home Assistant auf den TV",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Zuerst ein ADB-Befehl an VLC oder Just Player, dann Google Cast, dann AirPlay. Der Standard-TV liegt auf dem Server und gilt für alle; die Wahl in diesem Browser ersetzt ihn.",
+  "Загружаю список ТВ…": "TV-Liste wird geladen…",
+  "ТВ по умолчанию сохранён": "Standard-TV gespeichert"
 };

@@ -471,5 +471,22 @@
   "Всего": "Tổng",
   "Последняя сборка каталога": "Lần dựng danh mục gần nhất",
   "{0} МБ": "{0} MB",
-  "{0} с, пик памяти {1} МБ": "{0} giây, bộ nhớ đỉnh {1} MB"
+  "{0} с, пик памяти {1} МБ": "{0} giây, bộ nhớ đỉnh {1} MB",
+  "Включаю на ТВ: {0}": "Đang mở trên TV: {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "Chưa chọn TV: hãy chọn trong Cài đặt (Nút “Lên TV”).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "Home Assistant không thấy TV nào. Hãy thêm TV vào HA: tích hợp Android Debug Bridge hoặc Google Cast.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "TV đã chọn không còn trong Home Assistant: hãy chọn TV khác trong Cài đặt.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "TV không khả dụng trong Home Assistant: hãy cắm điện hoặc kiểm tra tích hợp.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "TV không có VLC lẫn Just Player: hãy cài một trong hai từ Google Play.",
+  "Home Assistant не смог включить канал на ТВ": "Home Assistant không mở được kênh trên TV",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Thẳng lên TV qua Home Assistant: ADB, Google Cast, AirPlay",
+  "Телевизор": "TV",
+  "ТВ по умолчанию для всех": "TV mặc định cho mọi người",
+  "Не выбран: если ТВ один, то он": "Chưa chọn: nếu chỉ có một TV thì dùng TV đó",
+  "ТВ в этом браузере": "TV trong trình duyệt này",
+  "Как для всех": "Giống cho mọi người",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "“Lên TV” giờ đi thẳng tới TV qua Home Assistant",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Trước tiên là lệnh ADB tới VLC hoặc Just Player, sau đó Google Cast, rồi AirPlay. TV mặc định lưu trên máy chủ và áp dụng cho mọi người; lựa chọn trong trình duyệt này sẽ thay thế nó.",
+  "Загружаю список ТВ…": "Đang tải danh sách TV…",
+  "ТВ по умолчанию сохранён": "Đã lưu TV mặc định"
 };

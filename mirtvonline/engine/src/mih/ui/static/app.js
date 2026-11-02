@@ -73,7 +73,7 @@ class ApiFailure extends Error {
 const KEEP_PREFIX = "mih.c:";
 const KEEP_CHARS = 400000; // bigger answers stay in memory only
 const KEEP_MIN = 30e3, KEEP_MAX = 6 * 3600e3;
-const LIVE_PATHS = /^\/(status|health|playback|data-version|jobs|notifications|settings|adult|categories\/review|recent)/;
+const LIVE_PATHS = /^\/(status|health|playback|tv|data-version|jobs|notifications|settings|adult|categories\/review|recent)/;
 const kept = new Map();
 let dataVersion = store.get("mih.dataVersion") || "";
 let fresh = false;
@@ -232,10 +232,20 @@ const PLAY_TEXT = {
   ha_not_playing: t("Скрипт Home Assistant сообщил, что канал не включился"),
   ha_notify_missing: t("В Home Assistant нет сервиса уведомлений ТВ: войдите в Companion на ТВ заново и укажите новый notify.mobile_app_… (MIH_HA_NOTIFY и скрипт)."),
   ha_not_configured: t("Home Assistant не настроен на сервере: MIH_HA_URL, MIH_HA_TOKEN."),
+  tv_not_chosen: t("Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»)."),
+  tv_none: t("Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast."),
+  tv_not_found: t("Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках."),
+  tv_unavailable: t("ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию."),
+  tv_no_player: t("На ТВ нет VLC и Just Player: установите один из них из Google Play."),
+  tv_failed: t("Home Assistant не смог включить канал на ТВ"),
 };
+// How "На ТВ" reached the TV (the command's detail when it started).
+const TV_WAYS = { "adb:vlc": "VLC (ADB)", "adb:just": "Just Player (ADB)", cast: "Google Cast", airplay: "AirPlay", media: "Home Assistant" };
 
-// "agent" or "ha": who starts the TV from this browser; none = the server's default.
+// "agent", "ha" or "tv": who starts the TV from this browser; none = the server's default.
 const playAdapter = () => store.get("mih.adapter");
+// The TV of this browser (a media_player entity); none = the server's default TV.
+const playTv = () => store.get("mih.tv");
 
 async function playOnTv(channelId, feedId, button) {
   if (button) button.disabled = true;
@@ -245,6 +255,7 @@ async function playOnTv(channelId, feedId, button) {
     if (feedId) target.feed_id = feedId;
     const body = { target, idempotency_key: key };
     if (playAdapter()) body.adapter = playAdapter();
+    if (playTv()) body.tv = playTv();
     if (store.get("mih.quality")) body.quality = store.get("mih.quality");
     let cmd = await api("/playback/commands", { method: "POST", body });
     // The agent has 30 s to take the command; then silence for 100 s means it plays,
@@ -258,6 +269,7 @@ async function playOnTv(channelId, feedId, button) {
     }
     if (cmd.state === "started" && cmd.detail === "unconfirmed") toast(PLAY_TEXT.unconfirmed, 8000);
     else if (told && cmd.state === "started") return;
+    else if (cmd.state === "started" && cmd.adapter === "tv") toast(t("Включаю на ТВ: {0}", TV_WAYS[cmd.detail] || cmd.detail || "Home Assistant"));
     else if (cmd.state === "started") toast(cmd.adapter === "ha" ? PLAY_TEXT.ha_started : PLAY_TEXT.started);
     else if (cmd.state === "failed") {
       const text = PLAY_TEXT[cmd.error] || t("Не удалось запустить: {0}", cmd.error);
@@ -979,6 +991,23 @@ async function fillHaStatus() {
   if (slot && seq === renderSeq) slot.textContent = text;
 }
 
+// The TVs of Home Assistant for the two lists in Settings: this browser's and everyone's.
+async function fillTvs() {
+  const seq = renderSeq;
+  let r;
+  try { r = await api("/tv"); } catch (e) { r = { items: [], error: null, failed: errorText(e) }; }
+  const slot = document.getElementById("tv-slot");
+  if (!slot || seq !== renderSeq) return;
+  const name = (id) => r.items.find((tv) => tv.entities.some((e) => e.entity_id === id))?.name || id;
+  const opts = (sel) => r.items.map((tv) => html`<option value="${tv.id}" ${tv.entities.some((e) => e.entity_id === sel) ? raw("selected") : ""}>${tv.name} · ${tv.methods.map((m) => TV_WAYS[m] || m).join(", ")}</option>`);
+  const problem = r.failed || (r.error ? PLAY_TEXT[r.error] || t("Ошибка: {0}", r.error) : (!r.items.length ? PLAY_TEXT.tv_none : ""));
+  slot.innerHTML = String(html`${problem ? html`<span class="small">⚠ ${problem}</span>` : ""}
+    <label for="tv-default">${t("ТВ по умолчанию для всех")}</label>
+    <select id="tv-default"><option value="">${t("Не выбран: если ТВ один, то он")}</option>${opts(r.default)}</select>
+    <label for="tv-mine">${t("ТВ в этом браузере")}</label>
+    <select id="tv-mine"><option value="">${t("Как для всех")}${r.default ? ` (${name(r.default)})` : ""}</option>${opts(playTv())}</select>`);
+}
+
 async function fillTopics() {
   const seq = renderSeq;
   try {
@@ -1030,6 +1059,7 @@ async function viewSettings() {
   try { adapters = await api("/playback/adapters"); } catch { /* an older server */ }
   const current = playAdapter() || adapters?.default || "agent";
   if (adapters?.available.includes("ha")) queueMicrotask(fillHaStatus);
+  if (adapters?.available.includes("tv")) queueMicrotask(fillTvs);
   const hasToken = Boolean(store.get("mih.token"));
   let adult = null, speed = null;
   try { adult = await api("/settings/adult"); } catch { /* an older server */ }
@@ -1099,6 +1129,8 @@ async function viewSettings() {
     </div>
     <h2>${t("Кнопка «На ТВ»")}</h2>
     ${adapters ? html`<div class="field">
+      ${adapters.available.includes("tv") ? html`<label class="row"><input type="radio" name="adapter" value="tv" ${current === "tv" ? raw("checked") : ""}>
+        ${t("Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay")}</label>` : ""}
       <label class="row"><input type="radio" name="adapter" value="agent" ${current === "agent" ? raw("checked") : ""}>
         ${t("Через агента: он берёт команду через MCP, включает ТВ и сообщает, если не заиграло")}</label>
       <label class="row"><input type="radio" name="adapter" value="ha" ${current === "ha" ? raw("checked") : ""}
@@ -1108,6 +1140,9 @@ async function viewSettings() {
         <span class="small" id="ha-status">${t("Проверяю Home Assistant…")}</span></div>` : ""}
       <span class="small muted">${t("Выбор хранится в этом браузере. Home Assistant получает адреса потоков и название канала и запускает свой скрипт, агент не участвует.")}</span>
     </div>` : ""}
+    ${adapters?.available.includes("tv") ? html`<h2>${t("Телевизор")}</h2>
+      <div class="field" id="tv-slot"><span class="small muted">${t("Загружаю список ТВ…")}</span></div>
+      <p class="small muted">${t("Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.")}</p>` : ""}
     ${speed ? html`<form id="open-speed-form" class="field">
       <label for="open-slow">${t("Порог медленного открытия, секунд")}</label>
       <div class="row"><input id="open-slow" name="slow_s" type="number" inputmode="decimal" step="0.5"
@@ -1817,6 +1852,13 @@ document.addEventListener("change", (e) => {
       .catch((err) => { el.value = ""; toast(errorText(err), 5000); });
     return;
   }
+  if (el.id === "tv-mine") { store.set("mih.tv", el.value || null); toast(t("Сохранено")); return; }
+  if (el.id === "tv-default") {
+    api("/settings/tv", { method: "PUT", body: { tv: el.value || null } })
+      .then(() => toast(t("ТВ по умолчанию сохранён")))
+      .catch((err) => toast(errorText(err), 5000));
+    return;
+  }
   if (PREF_KEYS[el.id]) { store.set(PREF_KEYS[el.id], el.value); toast(t("Сохранено")); }
   else if (el.name === "pref-strict") { store.set("mih.strict", el.value); toast(t("Сохранено")); }
   else if (el.id === "pref-playable") { store.set("mih.playable", el.checked ? "1" : "0"); toast(t("Сохранено")); }
@@ -1829,7 +1871,8 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (e.target.name === "adapter") {
     store.set("mih.adapter", e.target.value);
-    toast(e.target.value === "ha" ? t("«На ТВ» теперь идёт напрямую в Home Assistant") : t("«На ТВ» теперь выполняет агент"));
+    toast(e.target.value === "tv" ? t("«На ТВ» теперь идёт на ТВ через Home Assistant")
+      : e.target.value === "ha" ? t("«На ТВ» теперь идёт напрямую в Home Assistant") : t("«На ТВ» теперь выполняет агент"));
   }
   if (e.target.name === "quality") {
     store.set("mih.quality", e.target.value);

@@ -464,5 +464,22 @@
   "Всего": "Toplam",
   "Последняя сборка каталога": "Son katalog oluşturma",
   "{0} МБ": "{0} MB",
-  "{0} с, пик памяти {1} МБ": "{0} sn, en yüksek bellek {1} MB"
+  "{0} с, пик памяти {1} МБ": "{0} sn, en yüksek bellek {1} MB",
+  "Включаю на ТВ: {0}": "TV’de açılıyor: {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "TV seçilmedi: Ayarlar’dan seçin (“TV’de” düğmesi).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "Home Assistant hiç TV görmüyor. TV’yi HA’ya ekleyin: Android Debug Bridge veya Google Cast entegrasyonu.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "Seçilen TV artık Home Assistant’ta yok: Ayarlar’dan başka birini seçin.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "TV, Home Assistant’ta kullanılamıyor: fişe takın veya entegrasyonu kontrol edin.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "TV’de ne VLC ne de Just Player var: Google Play’den birini yükleyin.",
+  "Home Assistant не смог включить канал на ТВ": "Home Assistant kanalı TV’de açamadı",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Home Assistant üzerinden doğrudan TV’ye: ADB, Google Cast, AirPlay",
+  "Телевизор": "Televizyon",
+  "ТВ по умолчанию для всех": "Herkes için varsayılan TV",
+  "Не выбран: если ТВ один, то он": "Seçilmedi: tek TV varsa o",
+  "ТВ в этом браузере": "Bu tarayıcıdaki TV",
+  "Как для всех": "Herkesle aynı",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "“TV’de” artık Home Assistant üzerinden TV’ye gidiyor",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Önce VLC veya Just Player’a ADB komutu, sonra Google Cast, sonra AirPlay. Varsayılan TV sunucuda tutulur ve herkes için geçerlidir; bu tarayıcıdaki seçim onun yerine geçer.",
+  "Загружаю список ТВ…": "TV listesi yükleniyor…",
+  "ТВ по умолчанию сохранён": "Varsayılan TV kaydedildi"
 };

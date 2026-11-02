@@ -51,8 +51,27 @@ The add-on log prints, after every catalog build, how long it took and the peak 
 The **Status** page shows the same under **Data on disk**. Expected for profile S: about
 1 GB on disk and up to 600 MB of memory; M: 2–3.5 GB and up to 900 MB.
 
+## Launch on a TV
+
+The **On TV** button starts the channel on a TV that Home Assistant already knows, with
+no script of your own. The add-on finds the TVs among Home Assistant's media players;
+the entities of one TV (for example ADB and Google Cast of the same Android TV) show up
+as one TV. It tries, in this order:
+
+1. **ADB** (integration **Android Debug Bridge**): opens the stream in **VLC**, else in
+   **Just Player**; a TV that is off is turned on first. Install one of the two players
+   on the TV from Google Play.
+2. **Google Cast**: the Cast integration's media player.
+3. **AirPlay**: the Apple TV integration's media player.
+4. Any other media player that can play a link (DLNA and the like).
+
+Pick the TV in the site's **Settings** → **TV**: **Default TV for everyone** is kept in
+the add-on, **TV in this browser** overrides it for one phone or computer. With a single
+TV in Home Assistant nothing needs picking. Samsung, LG and other TVs without Android TV:
+a Google TV box (Chromecast with Google TV and the like) does the job.
+
 ## Status
 
 Early version. The site opens from the sidebar (MIRTVONLINE) with no token: Home
-Assistant has already checked who you are. Not yet done: launch on a TV, the first-run
-wizard, the weekly channel directory refresh.
+Assistant has already checked who you are. Not yet done: the first-run wizard, the
+weekly channel directory refresh.

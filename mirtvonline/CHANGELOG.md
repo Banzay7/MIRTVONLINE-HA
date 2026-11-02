@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+- **On TV** starts the channel on a TV of Home Assistant itself, no script needed: ADB
+  intent to VLC or Just Player first, then Google Cast, then AirPlay. The TV list comes
+  from Home Assistant; pick the TV in the site's **Settings** → **TV** (a default TV for
+  everyone, and one per browser).
+
 ## 0.1.3
 
 - Light mode for home boxes: background jobs run strictly one at a time and at a lower

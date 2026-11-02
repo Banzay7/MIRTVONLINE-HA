@@ -30,6 +30,7 @@ def test_defaults_are_profile_s_and_russian(tmp_path):
     assert env["MIH_BIND_PORT"] == "8765"
     assert env["MIH_INGRESS_PROXY"] == "172.30.32.2"
     assert "MIH_HA_URL" not in env
+    assert env["MIH_PLAYBACK"] == "off"
     assert "MIH_HOME_COUNTRY" not in env
 
 
@@ -45,6 +46,8 @@ def test_options_are_mapped(tmp_path):
     assert env["MIH_GITHUB_TOKEN"] == "ghp_x"
     assert env["MIH_HA_URL"] == "http://supervisor/core"
     assert env["MIH_HA_TOKEN"] == "sup"
+    # With Home Assistant at hand "На ТВ" goes to its TVs, without a script.
+    assert env["MIH_PLAYBACK"] == "tv"
 
 
 def test_timezone_falls_back_to_supervisor_tz(tmp_path):

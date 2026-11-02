@@ -464,5 +464,22 @@
   "Всего": "Total",
   "Последняя сборка каталога": "Pembuatan katalog terakhir",
   "{0} МБ": "{0} MB",
-  "{0} с, пик памяти {1} МБ": "{0} dtk, memori puncak {1} MB"
+  "{0} с, пик памяти {1} МБ": "{0} dtk, memori puncak {1} MB",
+  "Включаю на ТВ: {0}": "Menyalakan di TV: {0}",
+  "Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»).": "Belum ada TV yang dipilih: pilih di Pengaturan (Tombol “Di TV”).",
+  "Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast.": "Home Assistant tidak melihat TV apa pun. Tambahkan TV ke HA: integrasi Android Debug Bridge atau Google Cast.",
+  "Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках.": "TV yang dipilih sudah tidak ada di Home Assistant: pilih yang lain di Pengaturan.",
+  "ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию.": "TV tidak tersedia di Home Assistant: nyalakan atau periksa integrasinya.",
+  "На ТВ нет VLC и Just Player: установите один из них из Google Play.": "TV tidak punya VLC maupun Just Player: pasang salah satunya dari Google Play.",
+  "Home Assistant не смог включить канал на ТВ": "Home Assistant tidak bisa menyalakan saluran di TV",
+  "Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay": "Langsung ke TV lewat Home Assistant: ADB, Google Cast, AirPlay",
+  "Телевизор": "Televisi",
+  "ТВ по умолчанию для всех": "TV bawaan untuk semua",
+  "Не выбран: если ТВ один, то он": "Belum dipilih: jika hanya ada satu TV, itu yang dipakai",
+  "ТВ в этом браузере": "TV di browser ini",
+  "Как для всех": "Sama seperti untuk semua",
+  "«На ТВ» теперь идёт на ТВ через Home Assistant": "“Di TV” sekarang menuju TV lewat Home Assistant",
+  "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Pertama perintah ADB ke VLC atau Just Player, lalu Google Cast, lalu AirPlay. TV bawaan disimpan di server dan berlaku untuk semua; pilihan di browser ini menggantikannya.",
+  "Загружаю список ТВ…": "Memuat daftar TV…",
+  "ТВ по умолчанию сохранён": "TV bawaan disimpan"
 };
