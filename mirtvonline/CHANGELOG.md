@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- Fix install: Home Assistant built the add-on on its own Alpine base without Python
+  (`pip: not found`); the Python base image is now fixed in the Dockerfile.
+
 ## 0.1.1
 
 - The site opens from the Home Assistant sidebar (Ingress) with no token prompt.

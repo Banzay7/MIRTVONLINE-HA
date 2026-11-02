@@ -42,3 +42,11 @@ def test_engine_is_inside_the_addon():
     assert (ADDON / "engine" / "src" / "mih" / "cli.py").exists()
     dockerfile = (ADDON / "Dockerfile").read_text(encoding="utf-8")
     assert "github.com" not in dockerfile  # nothing fetched from GitHub at build time
+
+
+def test_base_image_has_python_and_ignores_build_from():
+    # Supervisor may pass BUILD_FROM=ghcr.io/home-assistant/base (no Python).
+    dockerfile = (ADDON / "Dockerfile").read_text(encoding="utf-8")
+    froms = [line for line in dockerfile.splitlines() if line.startswith("FROM ")]
+    assert froms == ["FROM docker.io/library/python:3.12-slim-bookworm"]
+    assert not (ADDON / "build.yaml").exists()
