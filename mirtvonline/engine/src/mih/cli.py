@@ -1,0 +1,379 @@
+"""Command line: run the server, import a playlist or guide file, print catalog stats."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+from mih import db, notify
+from mih.config import ConfigError, Settings
+from mih.directory import (
+    DEFAULT_BASE_URL,
+    FILES,
+    DirectoryError,
+    fetch_directory,
+    import_directory,
+)
+from mih.discovery.scout import summary
+from mih.epg.coverage import working_coverage
+from mih.epg.importer import import_xmltv
+from mih.epg.service import create_epg_source
+from mih.events import record_event, t
+from mih.export import export_catalog
+from mih.health.policy import HealthPolicy
+from mih.health.runner import run_checks
+from mih.lists import ListFilter, build_presets, load_presets, write_list
+from mih.report import report_path, write_report
+from mih.scheduler import JOBS, JobBusy, run_job, status_snapshot
+from mih.search.engine import SearchRequest, search
+from mih.search.index import ensure_index
+from mih.sources.fetch import FetchError
+from mih.sources.importer import import_m3u
+from mih.sources.service import SourceError, create_source, import_from_url
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="mih", description="MIRTVONLINE core")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("serve", help="run the HTTP API (and the MCP server if MIH_MCP_PORT is set)")
+    sub.add_parser("mcp", help="MCP server on stdin/stdout, for an agent on this host")
+    sub.add_parser("scheduler", help="run the background jobs (started by `mih serve` itself)")
+    sub.add_parser("migrate", help="create or upgrade the database")
+    imp = sub.add_parser("import-file", help="import a local M3U file into a named source")
+    imp.add_argument("path", type=Path)
+    imp.add_argument("--source", required=True, help="source name; created if missing")
+    imp.add_argument("--force", action="store_true", help="skip the size-drop safety check")
+    add = sub.add_parser("add-source", help="add a playlist URL as a source and import it now")
+    add.add_argument("name")
+    add.add_argument("url")
+    epg = sub.add_parser("import-epg-file", help="import a local XMLTV file (.xml or .xml.gz)")
+    epg.add_argument("path", type=Path)
+    epg.add_argument("--source", required=True, help="EPG source name; created if missing")
+    epg.add_argument("--force", action="store_true", help="skip the size-drop safety check")
+    dr = sub.add_parser(
+        "import-directory", help="import the iptv-org channel directory (no streams)"
+    )
+    dr.add_argument("--from", dest="src", type=Path,
+                    help="folder with channels/feeds/logos/blocklist .csv or .json")  # fmt: skip
+    dr.add_argument("--base-url", default=DEFAULT_BASE_URL, help="where to download from")
+    dr.add_argument("--country", action="append", default=[],
+                    help="add channels of this country the catalog lacks; repeatable")  # fmt: skip
+    hc = sub.add_parser("health-check", help="probe streams that are due for a check")
+    hc.add_argument(
+        "--limit", type=int, help="at most this many streams (default MIH_HEALTH_BATCH)"
+    )
+    hc.add_argument("--stream", action="append", help="check this stream id now; repeatable")
+    find = sub.add_parser("search", help='search programmes and channels: "роботы завтра"')
+    find.add_argument("query")
+    find.add_argument("--tz", help="IANA time zone for today/tomorrow (default MIH_TIMEZONE)")
+    find.add_argument("--limit", type=int, default=10)
+    exp = sub.add_parser("export", help="write channels with categories to a folder")
+    exp.add_argument("--out", type=Path, help="folder (default MIH_EXPORT_DIR)")
+    exp.add_argument(
+        "--no-playlist",
+        action="store_true",
+        help="skip playlist.m3u, the only file with stream URLs",
+    )
+    lst = sub.add_parser("list", help="write a list of channels that play now, filtered by need")
+    lst.add_argument("--name", default="valid", help="file name without extension")
+    lst.add_argument("--out", type=Path, help="folder (default MIH_EXPORT_DIR)")
+    lst.add_argument("--country", action="append", default=[], help="RU, VN...; repeatable")
+    lst.add_argument("--lang", action="append", default=[], help="ru, en...; repeatable")
+    lst.add_argument("--category", action="append", default=[], help="news, kids...; repeatable")
+    lst.add_argument(
+        "--level",
+        choices=("ok", "doubtful", "unknown"),
+        default="ok",
+        help="ok: played within 10 days (default); doubtful: within 14 days; unknown: not checked",
+    )
+    lst.add_argument("--timeshift", action="store_true", help="include +N hour copies")
+    lst.add_argument("--adult", action="store_true", help="include adult channels")
+    lst.add_argument("--epg-only", action="store_true", help="only channels with a guide")
+    lst.add_argument("--epg-url", help="guide URL for the playlist header (url-tvg)")
+    lst.add_argument("--no-playlist", action="store_true", help="skip <name>.m3u (stream URLs)")
+    lst.add_argument("--presets", action="store_true",
+                     help="build every list of MIH_LISTS_FILE into <export>/lists")  # fmt: skip
+    sub.add_parser("stats", help="print catalog counts")
+    srcs = sub.add_parser("sources", help="list playlist sources with their ids (URLs not shown)")
+    srcs.add_argument("--auto", action="store_true", help="include sources found by the scout")
+    sub.add_parser("epg-coverage", help="working channels with a guide, by country")
+    sub.add_parser("report", help="rebuild the coverage report of the web UI now and print it")
+    sub.add_parser("status", help="what the service is doing, recent events, the plan")
+    job = sub.add_parser("run-job", help="run a background job now; the result is pushed")
+    job.add_argument("name", choices=JOBS)
+    sub.add_parser("notify-test", help="send a test push to MIH_NTFY_URL")
+    ns = sub.add_parser("notify-send", help="send one push with your own text (used by mihctl.sh)")
+    ns.add_argument("title")
+    ns.add_argument("body", nargs="?", default="")
+    ns.add_argument("--level", default="warning", choices=sorted(notify._PRIORITY))
+    lt = sub.add_parser("loadtest", help="many people opening the web UI at once; prints timings")
+    lt.add_argument("--url", help="server address (default: this server, MIH_BIND_PORT)")
+    lt.add_argument("--users", type=int, default=100, help="people at once (default 100)")
+    lt.add_argument("--seconds", type=float, default=30, help="how long (default 30)")
+    lt.add_argument(
+        "--think",
+        type=float,
+        default=10,
+        help="seconds a person waits before opening the screen again (default 10)",
+    )
+    lt.add_argument("--fresh", action="store_true",
+                    help="every visit downloads everything, as on a first visit")  # fmt: skip
+    lt.add_argument("--procs", type=int, help="load generator processes (default: CPU count)")
+    dsc = sub.add_parser("discovery", help="what the playlist scout found and packed")
+    dsc.add_argument("--status", help="list the playlists in this state (live, packed, dead...)")
+    dsc.add_argument("--limit", type=int, default=50)
+    args = parser.parse_args(argv)
+
+    settings = Settings.from_env()
+    if args.cmd == "serve":
+        return _serve(settings)
+    if args.cmd == "scheduler":
+        return _scheduler(settings)
+    if args.cmd == "loadtest":
+        return _loadtest(settings, args)
+    if args.cmd == "mcp":
+        from mih.mcp.server import run_stdio
+
+        return run_stdio(settings)
+
+    conn = db.connect(settings.db_path)
+    db.migrate(conn)
+    ensure_index(conn)
+    if args.cmd == "migrate":
+        print("database is up to date")
+    elif args.cmd == "import-file":
+        row = conn.execute("SELECT id FROM sources WHERE name = ?", (args.source,)).fetchone()
+        try:
+            source_id = (
+                row["id"] if row else create_source(conn, settings, name=args.source, url=None)
+            )
+        except SourceError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        report = import_m3u(conn, settings, source_id, args.path.read_bytes(), force=args.force)
+        _import_event(conn, settings, args.source, report)
+        print(json.dumps(report.stats(), ensure_ascii=False, indent=2))
+        return 0 if report.status != "rejected" else 2
+    elif args.cmd == "add-source":
+        # The URL may carry a subscriber's key: it is stored, never printed.
+        try:
+            source_id = create_source(conn, settings, name=args.name, url=args.url)
+            report = import_from_url(conn, settings, source_id, force=True)
+        except (SourceError, FetchError) as exc:
+            print(f"error: {exc.code}", file=sys.stderr)
+            return 1
+        if report is not None:
+            _import_event(conn, settings, args.name, report)
+        print(json.dumps(report.stats() if report else {}, ensure_ascii=False, indent=2))
+        return 0 if report is None or report.status != "rejected" else 2
+    elif args.cmd == "import-epg-file":
+        row = conn.execute("SELECT id FROM epg_sources WHERE name = ?", (args.source,)).fetchone()
+        try:
+            source_id = (
+                row["id"] if row else create_epg_source(conn, settings, name=args.source, url=None)
+            )
+        except SourceError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        report = import_xmltv(conn, settings, source_id, args.path.read_bytes(), force=args.force)
+        _import_event(conn, settings, args.source, report)
+        print(json.dumps(report.stats(), ensure_ascii=False, indent=2))
+        return 0 if report.status != "rejected" else 2
+    elif args.cmd == "import-directory":
+        try:
+            files = _local_directory(args.src) if args.src else fetch_directory(
+                settings, args.base_url)  # fmt: skip
+            report = import_directory(conn, files, countries=tuple(args.country))
+        except (DirectoryError, FetchError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps(report.stats(), indent=2))
+    elif args.cmd == "health-check":
+        report = run_checks(conn, settings, HealthPolicy.from_env(), stream_ids=args.stream,
+                            limit=args.limit)  # fmt: skip
+        print(json.dumps(report.stats(), ensure_ascii=False, indent=2))
+        return 0 if report.status == "done" else 3
+    elif args.cmd == "search":
+        req = SearchRequest(query=args.query, tz=args.tz or settings.timezone, limit=args.limit)
+        print(json.dumps(search(conn, req, datetime.now(UTC)), ensure_ascii=False, indent=2))
+    elif args.cmd == "export":
+        result = export_catalog(conn, args.out or settings.export_dir,
+                                with_playlist=not args.no_playlist)  # fmt: skip
+        stats = result.stats()
+        title = t(settings, "export", channels=stats["channels"])
+        record_event(conn, settings, "export", "info", title, data=stats)
+        print(json.dumps(stats, ensure_ascii=False, indent=2))
+    elif args.cmd == "list" and args.presets:
+        try:
+            built = build_presets(conn, args.out or settings.lists_dir,
+                                  load_presets(settings.lists_file))  # fmt: skip
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps([r.stats() for r in built], ensure_ascii=False, indent=2))
+    elif args.cmd == "list":
+        flt = ListFilter(countries=tuple(args.country), languages=tuple(args.lang),
+                         categories=tuple(args.category),
+                         exclude_categories=() if args.adult else ("adult",),
+                         min_level=args.level, timeshift=args.timeshift,
+                         epg_only=args.epg_only)  # fmt: skip
+        try:
+            result = write_list(conn, args.out or settings.export_dir, args.name, flt,
+                                epg_url=args.epg_url,
+                                with_playlist=not args.no_playlist)  # fmt: skip
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps(result.stats(), ensure_ascii=False, indent=2))
+    elif args.cmd == "stats":
+        counts = {
+            t: conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+            for t in ("sources", "channels", "feeds", "streams", "epg_sources", "programmes",
+                      "airings")
+        }  # fmt: skip
+        counts["needs_review"] = conn.execute(
+            "SELECT COUNT(*) FROM match_decisions WHERE decision = 'needs_review'"
+        ).fetchone()[0]
+        print(json.dumps(counts, indent=2))
+    elif args.cmd == "sources":
+        # The id is what /api/v1/sources/{id}/upload needs; URLs may hold keys, so only a flag.
+        rows = conn.execute(
+            "SELECT s.id, s.name, s.url IS NOT NULL AS has_url,"
+            " (SELECT COUNT(*) FROM streams WHERE source_id = s.id) AS streams,"
+            " (SELECT fetched_at || ' ' || status FROM source_snapshots"
+            "  WHERE source_id = s.id ORDER BY fetched_at DESC, rowid DESC LIMIT 1) AS last_import"
+            " FROM sources s WHERE ? OR s.name NOT LIKE 'auto:%' ORDER BY s.name",
+            (args.auto,),
+        ).fetchall()
+        for r in rows:
+            print(f"{r['id']}  {r['name']}  url={'yes' if r['has_url'] else 'no'}"
+                  f"  streams={r['streams']}  last={r['last_import'] or '-'}")  # fmt: skip
+    elif args.cmd == "epg-coverage":
+        print(json.dumps(working_coverage(conn).to_dict(), ensure_ascii=False, indent=2))
+    elif args.cmd == "report":
+        report = write_report(conn, report_path(settings.data_dir), every=timedelta(0))
+        print(json.dumps({k: report[k] for k in ("generated_at", "funnel", "not_working")},
+                         ensure_ascii=False, indent=2))  # fmt: skip
+    elif args.cmd == "status":
+        print(json.dumps(status_snapshot(conn, settings), ensure_ascii=False, indent=2))
+    elif args.cmd == "run-job":
+        try:
+            event = run_job(conn, settings, args.name, manual=True)
+        except JobBusy:
+            print(f"error: job {args.name} is already running", file=sys.stderr)
+            return 4
+        print(event["title"])
+        if event["body"]:
+            print(event["body"])
+        return 0 if event["data"]["status"] != "error" else 3
+    elif args.cmd == "discovery" and args.status:
+        rows = conn.execute(
+            "SELECT url, origin, reason, entries, new_entries, sampled, sample_ok, checked,"
+            " packed_ok, scouted_at FROM discovered_playlists WHERE status = ?"
+            " ORDER BY scouted_at DESC LIMIT ?",
+            (args.status, args.limit),
+        ).fetchall()
+        print(json.dumps([dict(r) for r in rows], ensure_ascii=False, indent=2))
+    elif args.cmd == "discovery":
+        print(json.dumps(summary(conn), ensure_ascii=False, indent=2))
+    elif args.cmd == "notify-test":
+        if not settings.ntfy_url:
+            print("error: MIH_NTFY_URL is not set", file=sys.stderr)
+            return 1
+        result = notify.send(settings, t(settings, "notify.test"),
+                             t(settings, "notify.test.body"))  # fmt: skip
+        print(result)
+        return 0 if result == "sent" else 5
+    elif args.cmd == "notify-send":
+        result = notify.send(settings, args.title, args.body, args.level)
+        print(result)
+        return 0 if result in ("sent", "off") else 5
+    return 0
+
+
+def _local_directory(folder: Path) -> dict[str, bytes]:
+    out = {}
+    for name in FILES:
+        for ext in (".csv", ".json"):
+            if (folder / f"{name}{ext}").exists():
+                out[name] = (folder / f"{name}{ext}").read_bytes()
+                break
+    return out
+
+
+def _import_event(conn, settings: Settings, source: str, report) -> None:
+    if report.status == "rejected":
+        status, level = t(settings, "rejected", reason=report.reason), "warning"
+    else:
+        status, level = t(settings, report.status), "info"
+    record_event(conn, settings, "import", level, t(settings, "import", source=source,
+                 status=status), data=report.stats())  # fmt: skip
+
+
+def _scheduler(settings: Settings) -> int:
+    import signal
+    import threading
+
+    from mih.scheduler import Scheduler
+
+    done = threading.Event()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda *_: done.set())
+    scheduler = Scheduler(settings, HealthPolicy.from_env())
+    scheduler.start()
+    done.wait()
+    scheduler.stop(timeout=10)
+    return 0
+
+
+def _loadtest(settings: Settings, args) -> int:
+    from mih.loadtest import run
+
+    url = args.url or f"http://127.0.0.1:{settings.bind_port}"
+    report = run(url, settings.api_token, args.users, args.seconds, args.think, args.fresh,
+                 args.procs)  # fmt: skip
+    print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+    return 0 if not report.errors else 3
+
+
+def _serve(settings: Settings) -> int:
+    try:
+        settings.validate_for_serving()
+    except ConfigError as exc:
+        print(f"refusing to start: {exc}", file=sys.stderr)
+        return 1
+    import uvicorn
+
+    from mih.api.app import create_app
+
+    if settings.mcp_port is not None:
+        import threading
+
+        from mih.mcp.server import create_mcp_app
+
+        # Off the main thread uvicorn leaves signals alone: the API below owns shutdown,
+        # and this listener ends with the process. It holds no state of its own.
+        mcp = uvicorn.Server(uvicorn.Config(create_mcp_app(settings), host=settings.mcp_host,
+                                            port=settings.mcp_port, lifespan="off"))  # fmt: skip
+        threading.Thread(target=mcp.run, name="mcp", daemon=True).start()
+    # Browsers keep a connection for a while; 5 s (uvicorn's default) closes it under them.
+    opts = {"host": settings.bind_host, "port": settings.bind_port, "timeout_keep_alive": 30}
+    if settings.workers == 1:
+        uvicorn.run(create_app(settings), **opts)
+        return 0
+    from mih.scheduler import background
+
+    conn = db.connect(settings.db_path)  # once here, not in every worker at the same time
+    db.migrate(conn)
+    ensure_index(conn)
+    conn.close()
+    with background(settings, HealthPolicy.from_env()):
+        uvicorn.run("mih.api.app:app_from_env", factory=True, workers=settings.workers, **opts)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
