@@ -10,7 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
 
-from mih import db, notify
+from mih import db, notify, upkeep
 from mih.api.app import ApiError, Conn
 from mih.config import LANGS, LEVELS, Settings
 from mih.events import list_events, record_event, t
@@ -56,6 +56,7 @@ def build_router(settings: Settings, policy: HealthPolicy, auth: list,
             return {"job": name, "accepted": True}
 
         def work() -> None:
+            upkeep.lower_priority(settings.job_nice)
             c = db.connect(settings.db_path)
             try:
                 run_job(c, settings, name, policy=policy, manual=True)

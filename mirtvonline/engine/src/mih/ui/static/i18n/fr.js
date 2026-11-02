@@ -456,5 +456,13 @@
   "открывается медленно": "s’ouvre lentement",
   "открывается нормально": "s’ouvre normalement",
   "открывается очень медленно": "s’ouvre très lentement",
-  "плеер": "lecteur"
+  "плеер": "lecteur",
+  "Данные на диске": "Données sur le disque",
+  "База данных": "Base de données",
+  "Снимки и выгрузки": "Instantanés et exports",
+  "Прочее": "Autres",
+  "Всего": "Total",
+  "Последняя сборка каталога": "Dernière construction du catalogue",
+  "{0} МБ": "{0} Mo",
+  "{0} с, пик памяти {1} МБ": "{0} s, pic mémoire {1} Mo"
 };

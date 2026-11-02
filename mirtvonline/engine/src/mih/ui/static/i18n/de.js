@@ -456,5 +456,13 @@
   "открывается медленно": "öffnet langsam",
   "открывается нормально": "öffnet normal",
   "открывается очень медленно": "öffnet sehr langsam",
-  "плеер": "Player"
+  "плеер": "Player",
+  "Данные на диске": "Daten auf dem Datenträger",
+  "База данных": "Datenbank",
+  "Снимки и выгрузки": "Snapshots und Exporte",
+  "Прочее": "Sonstiges",
+  "Всего": "Gesamt",
+  "Последняя сборка каталога": "Letzter Katalogaufbau",
+  "{0} МБ": "{0} MB",
+  "{0} с, пик памяти {1} МБ": "{0} s, Spitzenspeicher {1} MB"
 };

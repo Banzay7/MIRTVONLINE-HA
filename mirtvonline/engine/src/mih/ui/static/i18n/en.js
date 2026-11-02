@@ -463,5 +463,13 @@
   "На разбор · {0}": "To review · {0}",
   "Эти каналы попали в «Для взрослых» по косвенным признакам. Подтвердите 18+ или перенесите канал в другую категорию.": "These channels went to «Adult» on indirect signs. Confirm 18+ or move the channel to another category.",
   "Оставлен в «Для взрослых»": "Kept in «Adult»",
-  "Перенесён в «{0}»": "Moved to «{0}»"
+  "Перенесён в «{0}»": "Moved to «{0}»",
+  "Данные на диске": "Data on disk",
+  "База данных": "Database",
+  "Снимки и выгрузки": "Snapshots and exports",
+  "Прочее": "Other",
+  "Всего": "Total",
+  "Последняя сборка каталога": "Last catalog build",
+  "{0} МБ": "{0} MB",
+  "{0} с, пик памяти {1} МБ": "{0} s, peak memory {1} MB"
 };

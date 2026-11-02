@@ -258,6 +258,14 @@ TEXTS = {
         "en": "lists (channels, with a guide): {lists}",
         "ru": "списки (каналов, с программой): {lists}",
     },
+    "lists.unchanged": {
+        "en": "lists: the catalog has not changed",
+        "ru": "списки: каталог не изменился",
+    },
+    "lists.later": {
+        "en": "lists: will be rebuilt at {at}",
+        "ru": "списки: пересоберутся в {at}",
+    },
     "digest.catalog": {
         "en": "Catalog: {channels} channels, streams working {active} of {streams}",
         "ru": "Каталог: каналов {channels}, потоков работает {active} из {streams}",
@@ -352,6 +360,8 @@ _VI = {
     "health.down": "không còn truy cập được: {n}",
     "health.up": "hoạt động trở lại: {n}",
     "health.lists": "danh sách (kênh, có lịch phát sóng): {lists}",
+    "lists.unchanged": "danh sách: danh mục không thay đổi",
+    "lists.later": "danh sách: dựng lại lúc {at}",
     "digest.catalog": "Danh mục: {channels} kênh, luồng hoạt động {active}/{streams}",
     "digest.day": "24 giờ qua: {runs} lần chạy tác vụ, {problems} sự cố",
     "digest.health": "Đã kiểm tra luồng: {checked}, không phản hồi {failed}",

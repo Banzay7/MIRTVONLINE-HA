@@ -39,9 +39,9 @@ FILES_PER_REPO = 40
 FILES_PER_SEED_REPO = 400
 REPO_RESCAN = timedelta(days=30)
 # How often seeds, pages and searches are gone through again, when MIH_DISCOVERY_SEARCH_EVERY
-# is not set: daily while the install is new, monthly once the first AUTO_DAILY_FOR are over
+# is not set: daily while the install is new, monthly once the first
+# MIH_DISCOVERY_FRESH_DAYS (default 60) are over
 # (by then the searches have little new to give).
-AUTO_DAILY_FOR = timedelta(days=60)
 AUTO_EARLY = timedelta(days=1)
 AUTO_LATER = timedelta(days=30)
 PAGES_PER_RUN = 3
@@ -211,7 +211,8 @@ def search_period(conn: sqlite3.Connection, settings: Settings, now: datetime) -
     if first is None:
         _set_state(conn, "first_harvest_at", format_ts(now))
         return AUTO_EARLY
-    return AUTO_EARLY if now - parse_ts(first) < AUTO_DAILY_FOR else AUTO_LATER
+    fresh = timedelta(days=settings.discovery_fresh_days)
+    return AUTO_EARLY if now - parse_ts(first) < fresh else AUTO_LATER
 
 
 def _repos_due(conn: sqlite3.Connection, now: datetime, period: timedelta,

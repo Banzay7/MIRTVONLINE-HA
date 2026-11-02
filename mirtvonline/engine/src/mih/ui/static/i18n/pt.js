@@ -456,5 +456,13 @@
   "открывается медленно": "abre devagar",
   "открывается нормально": "abre normalmente",
   "открывается очень медленно": "abre muito devagar",
-  "плеер": "player"
+  "плеер": "player",
+  "Данные на диске": "Dados no disco",
+  "База данных": "Banco de dados",
+  "Снимки и выгрузки": "Instantâneos e exportações",
+  "Прочее": "Outros",
+  "Всего": "Total",
+  "Последняя сборка каталога": "Última criação do catálogo",
+  "{0} МБ": "{0} MB",
+  "{0} с, пик памяти {1} МБ": "{0} s, pico de memória {1} MB"
 };

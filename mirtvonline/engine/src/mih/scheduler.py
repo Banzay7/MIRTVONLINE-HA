@@ -15,6 +15,7 @@ import sqlite3
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -23,7 +24,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from mih import __version__, db
+from mih import __version__, db, upkeep
 from mih.alerts import alert_line, find_matches, load_rules, run_alerts
 from mih.config import Settings
 from mih.discovery.harvest import harvest, load_plan
@@ -57,6 +58,11 @@ GUIDE_MAX_AGE = timedelta(hours=6)
 AUTOPILOT_AGAIN = timedelta(minutes=5)
 
 
+# Jobs of this process run one at a time: the scheduler's and the ones started from the
+# web UI wait for each other, so memory never holds two imports or two catalogs.
+_ONE_AT_A_TIME = threading.Lock()
+
+
 class JobBusy(Exception):
     """The job is already running."""
 
@@ -83,13 +89,27 @@ def _parse(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def next_run(settings: Settings, name: str, after: datetime) -> datetime | None:
+def _clock(settings: Settings, name: str):
+    """The local time of day a job runs at, for jobs that run by the clock."""
     if name == "digest":
-        if settings.digest_at is None:
+        return settings.digest_at
+    if name == "epg":
+        return settings.epg_at
+    return None
+
+
+def _by_clock(settings: Settings, name: str) -> bool:
+    return name == "digest" or _clock(settings, name) is not None
+
+
+def next_run(settings: Settings, name: str, after: datetime) -> datetime | None:
+    if _by_clock(settings, name):
+        clock = _clock(settings, name)
+        if clock is None:
             return None
         tz = ZoneInfo(settings.timezone)
         local = after.astimezone(tz)
-        at = local.replace(hour=settings.digest_at.hour, minute=settings.digest_at.minute,
+        at = local.replace(hour=clock.hour, minute=clock.minute,
                            second=0, microsecond=0)  # fmt: skip
         if at <= local:
             at += timedelta(days=1)
@@ -115,7 +135,7 @@ def sync_jobs(
     interrupted = []
     for name in JOBS:
         row = conn.execute("SELECT * FROM jobs WHERE name = ?", (name,)).fetchone()
-        if name == "digest":
+        if _by_clock(settings, name):
             planned = next_run(settings, name, now)
         else:
             planned = now + FIRST_RUN_DELAY if _every(settings, name) else None
@@ -136,8 +156,9 @@ def sync_jobs(
             conn.execute("UPDATE jobs SET next_run_at = ? WHERE name = ?", (value, name))
             continue
         current = _parse(row["next_run_at"])
-        latest = planned if name == "digest" else now + _every(settings, name)
-        if current > latest or (name == "digest" and current != planned and current > now):
+        clocked = _by_clock(settings, name)
+        latest = planned if clocked else now + _every(settings, name)
+        if current > latest or (clocked and current != planned and current > now):
             # The interval got shorter or the digest moved: do not wait for the old plan.
             conn.execute("UPDATE jobs SET next_run_at = ? WHERE name = ?", (_fmt(latest), name))
     return interrupted
@@ -165,6 +186,12 @@ def run_job(
     """Run one job now and record its event. Raises JobBusy if it is already running."""
     if name not in JOBS:
         raise ValueError(f"unknown job {name!r}")
+    with _ONE_AT_A_TIME:
+        return _run_job(conn, settings, name, policy=policy, manual=manual, now=now,
+                        transport=transport)  # fmt: skip
+
+
+def _run_job(conn, settings, name, *, policy, manual, now, transport) -> dict:
     started = now or datetime.now(UTC)
     conn.execute("INSERT OR IGNORE INTO jobs (name) VALUES (?)", (name,))
     stale = _fmt(started - STALE_AFTER)
@@ -253,19 +280,44 @@ def _describe_guide(settings, r) -> tuple[str, bool]:
     return text, False  # a new day of guide is routine
 
 
-def _rebuild_lists(conn, settings, data: dict, guide_max_age: timedelta = GUIDE_MAX_AGE) -> str:
+def _rebuild_lists(
+    conn, settings, data: dict, guide_max_age: timedelta = GUIDE_MAX_AGE, *, force: bool = False
+) -> str:
     """Every finished part (a playlist, a guide, a batch of checks) is merged into the
     catalog by its importer; the lists are rebuilt right after, so they grow as the
     work goes instead of waiting for a full pass. A list's guide file is rewritten
     after a guide import, and otherwise only now and then (see mih.lists.write_list)."""
+    guide = guide_max_age == timedelta(0)
+    now = datetime.now(UTC)
+    decision, when = (
+        ("build", None)
+        if force
+        else upkeep.catalog_decision(conn, settings.catalog_every, now, guide=guide)
+    )
+    if decision == "unchanged":
+        return t(settings, "lists.unchanged")
+    if decision == "later":
+        return t(settings, "lists.later",
+                 at=when.astimezone(ZoneInfo(settings.timezone)).strftime("%H:%M"))  # fmt: skip
     # One catalog for the lists and the report: building it is the slow part.
     try:
+        started = time.monotonic()
         catalog = build_catalog(conn)
         built = build_presets(conn, settings.lists_dir, load_presets(settings.lists_file),
                               public_url=settings.public_url, token=settings.api_token,
                               guide_max_age=guide_max_age, catalog=catalog)  # fmt: skip
     except (ValueError, OSError) as exc:
         return t(settings, "error", error=exc)
+    data.update(upkeep.record_build(conn, time.monotonic() - started, now, len(catalog)))
+    try:
+        upkeep.log_disk(
+            settings.data_dir,
+            db_path=settings.db_path,
+            snapshots=settings.snapshots_dir,
+            export=settings.export_dir,
+        )
+    except OSError:
+        log.exception("data size not measured")
     data["lists"] = {r.name: r.channels for r in built}
     data["lists_with_guide"] = {r.name: r.with_guide for r in built}
     _refresh_report(conn, settings, timedelta(0) if guide_max_age == timedelta(0) else REPORT_EVERY,
@@ -281,6 +333,24 @@ def _refresh_report(conn, settings, every: timedelta, catalog: list[dict] | None
         write_report(conn, report_path(settings.data_dir), every=every, catalog=catalog)
     except (sqlite3.Error, OSError, ValueError, KeyError):
         log.exception("coverage report failed")
+
+
+def build_pending(conn: sqlite3.Connection, settings: Settings,
+                  now: datetime | None = None) -> bool:  # fmt: skip
+    """Build the catalog a job put off (light mode) once its time has come."""
+    with _ONE_AT_A_TIME:
+        pending = upkeep.pending_build(conn, settings.catalog_every, now or datetime.now(UTC))
+        if not pending:
+            return False
+        line = _rebuild_lists(
+            conn,
+            settings,
+            {},
+            force=True,
+            guide_max_age=timedelta(0) if pending == "guide" else GUIDE_MAX_AGE,
+        )
+        log.info("deferred catalog build: %s", line)
+        return True
 
 
 def _job_sources(conn, settings, policy, now, transport) -> Outcome:
@@ -502,7 +572,7 @@ def plan_by_job(conn: sqlite3.Connection, settings: Settings, now: datetime) -> 
     for name in JOBS:
         mine = [p["at"] for p in runs if p["job"] == name]
         if mine:
-            every = _every(settings, name) if name != "digest" else None
+            every = _every(settings, name) if not _by_clock(settings, name) else None
             minutes = int(every.total_seconds() // 60) if every else None
             out.append({"job": name, "next_at": mine[0], "runs": mine, "every_minutes": minutes})
     return sorted(out, key=lambda p: p["next_at"])
@@ -553,6 +623,13 @@ def status_snapshot(conn: sqlite3.Connection, settings: Settings, *,
             "streams": streams,
         },  # fmt: skip
         "discovery": summary(conn),
+        "catalog_build": upkeep.catalog_state(conn),
+        "disk": upkeep.disk_usage(
+            settings.data_dir,
+            db_path=settings.db_path,
+            snapshots=settings.snapshots_dir,
+            export=settings.export_dir,
+        ),
         "events": list_events(conn, limit=30, lang=lang),
     }
 
@@ -587,6 +664,7 @@ class Scheduler:
             self._thread.join(timeout)
 
     def _loop(self) -> None:
+        upkeep.lower_priority(self.settings.job_nice)
         while not self._stop.is_set():
             try:
                 self.tick()
@@ -606,6 +684,8 @@ class Scheduler:
                     ran.append(name)
                 except JobBusy:
                     pass  # started on request a moment ago
+            if not self._stop.is_set() and build_pending(conn, self.settings, now):
+                ran.append("catalog")
         finally:
             conn.close()
         return ran
@@ -626,6 +706,15 @@ def background(settings: Settings, policy: HealthPolicy | None = None) -> Iterat
     if settings.scheduler_enabled and settings.scheduler_mode == "thread":
         scheduler = Scheduler(settings, policy)
     service_event(settings, "service.started")
+    try:
+        upkeep.log_disk(
+            settings.data_dir,
+            db_path=settings.db_path,
+            snapshots=settings.snapshots_dir,
+            export=settings.export_dir,
+        )
+    except OSError:
+        log.exception("data size not measured")
     if scheduler:
         scheduler.start()
     elif settings.scheduler_enabled:

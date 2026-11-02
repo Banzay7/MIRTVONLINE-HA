@@ -456,5 +456,13 @@
   "открывается медленно": "terbuka lambat",
   "открывается нормально": "terbuka normal",
   "открывается очень медленно": "terbuka sangat lambat",
-  "плеер": "pemutar"
+  "плеер": "pemutar",
+  "Данные на диске": "Data di disk",
+  "База данных": "Basis data",
+  "Снимки и выгрузки": "Snapshot dan ekspor",
+  "Прочее": "Lainnya",
+  "Всего": "Total",
+  "Последняя сборка каталога": "Pembuatan katalog terakhir",
+  "{0} МБ": "{0} MB",
+  "{0} с, пик памяти {1} МБ": "{0} dtk, memori puncak {1} MB"
 };

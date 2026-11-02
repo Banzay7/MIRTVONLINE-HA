@@ -91,6 +91,14 @@ class Settings:
     every_sources: timedelta | None = timedelta(hours=6)
     every_epg: timedelta | None = timedelta(hours=12)
     every_health: timedelta | None = timedelta(minutes=10)
+    # The guide at this local time each day instead of every ``every_epg`` (a quiet
+    # hour on a small home box); None = by the interval.
+    epg_at: time | None = None
+    # Light mode (mih.upkeep): rebuild the catalog only when its data changed and at most
+    # this often; None = after every job, as on a server.
+    catalog_every: timedelta | None = None
+    # Nice added to the jobs' thread in thread mode (0..19); process mode always uses 10.
+    job_nice: int = 0
     # Topic alerts: how often the guide is scanned, and how long before the start a
     # programme is announced. None = no alerts.
     every_alerts: timedelta | None = timedelta(minutes=5)
@@ -114,6 +122,9 @@ class Settings:
     # How often the search for new playlists starts over (seeds, pages, GitHub searches).
     # None = daily for the first 60 days of the install, then monthly.
     discovery_search_every: timedelta | None = None
+    # With MIH_DISCOVERY_SEARCH_EVERY=auto: days the search starts over daily before it
+    # goes monthly.
+    discovery_fresh_days: int = 60
     # Optional: GitHub code search needs a token (any token, no scopes); without one
     # only repository search runs, at 60 API calls an hour.
     github_token: str | None = None
@@ -220,6 +231,9 @@ class Settings:
             every_epg=parse_every(env.get("MIH_EVERY_EPG", "12h"), "MIH_EVERY_EPG"),
             every_health=parse_every(env.get("MIH_EVERY_HEALTH", "10m"), "MIH_EVERY_HEALTH"),
             every_alerts=parse_every(env.get("MIH_EVERY_ALERTS", "5m"), "MIH_EVERY_ALERTS"),
+            epg_at=_parse_clock(env.get("MIH_EPG_AT", "off"), "MIH_EPG_AT"),
+            catalog_every=parse_every(env.get("MIH_CATALOG_EVERY", "off"), "MIH_CATALOG_EVERY"),
+            job_nice=min(19, max(0, int(env.get("MIH_JOB_NICE", "0")))),
             alert_lead=parse_every(env.get("MIH_ALERT_LEAD", "15m"), "MIH_ALERT_LEAD"),
             alert_link=_choice(env.get("MIH_ALERT_LINK", "auto"), "MIH_ALERT_LINK", ALERT_LINKS),
             digest_at=_parse_clock(env.get("MIH_DIGEST_AT", "09:00"), "MIH_DIGEST_AT"),
@@ -229,6 +243,7 @@ class Settings:
             discovery_pack_batch=max(1, int(env.get("MIH_DISCOVERY_PACK_BATCH", "60"))),
             discovery_max_streams=int(env.get("MIH_DISCOVERY_MAX_STREAMS", "30000")),
             discovery_search_every=_search_every(env.get("MIH_DISCOVERY_SEARCH_EVERY", "auto")),
+            discovery_fresh_days=max(1, int(env.get("MIH_DISCOVERY_FRESH_DAYS", "60"))),
             github_token=env.get("MIH_GITHUB_TOKEN") or None,
             discovery_file=(
                 Path(env["MIH_DISCOVERY_FILE"]) if env.get("MIH_DISCOVERY_FILE") else None
