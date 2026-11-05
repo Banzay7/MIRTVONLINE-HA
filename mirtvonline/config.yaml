@@ -1,5 +1,5 @@
 name: MIRTVONLINE
-version: "0.1.4"
+version: "0.1.5"
 slug: mirtvonline
 description: Catalog, TV guide and search for live TV channels from your own and public playlists
 url: https://github.com/Banzay7/MIRTVONLINE-HA
@@ -14,6 +14,9 @@ panel_icon: mdi:television-classic
 panel_title: MIRTVONLINE
 # Supervisor token for calling Home Assistant services (launch on a TV).
 homeassistant_api: true
+# Home Assistant hands channel names to the add-on (hassio.addon_stdin), see
+# script.mirtv_channel in DOCS.md.
+stdin: true
 # No ports are published: the web UI is reachable only through Ingress.
 backup_exclude:
   - snapshots

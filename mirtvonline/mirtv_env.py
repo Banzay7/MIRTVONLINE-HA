@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import shlex
+import socket
 import sys
 from pathlib import Path
 
@@ -109,6 +110,11 @@ def build_env(options: dict, environ: dict[str, str], data_dir: Path) -> dict[st
         env["MIH_HA_TOKEN"] = supervisor_token
         # "На ТВ" starts the channel on a TV of Home Assistant itself (ADB, Cast, AirPlay).
         env["MIH_PLAYBACK"] = "tv"
+        # The add-on's slug, for hassio.addon_stdin in HA scripts: the Supervisor names
+        # the container after it, with "-" for "_".
+        host = (environ.get("HOSTNAME") or socket.gethostname()).strip()
+        if host:
+            env["MIH_HA_ADDON"] = host.replace("-", "_")
     return env
 
 

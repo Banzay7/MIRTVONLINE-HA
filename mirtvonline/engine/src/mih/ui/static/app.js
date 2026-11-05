@@ -238,6 +238,8 @@ const PLAY_TEXT = {
   tv_unavailable: t("ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию."),
   tv_no_player: t("На ТВ нет VLC и Just Player: установите один из них из Google Play."),
   tv_failed: t("Home Assistant не смог включить канал на ТВ"),
+  ha_not_addon: t("Доступно только в дополнении Home Assistant."),
+  ha_setup_failed: t("Home Assistant не дал создать скрипт или автоматизацию. Подробности в журнале HA."),
 };
 // How "На ТВ" reached the TV (the command's detail when it started).
 const TV_WAYS = { "adb:vlc": "VLC (ADB)", "adb:just": "Just Player (ADB)", cast: "Google Cast", airplay: "AirPlay", media: "Home Assistant" };
@@ -1008,6 +1010,25 @@ async function fillTvs() {
     <select id="tv-mine"><option value="">${t("Как для всех")}${r.default ? ` (${name(r.default)})` : ""}</option>${opts(playTv())}</select>`);
 }
 
+// What the add-on put into Home Assistant: the channel script, Assist phrases, the
+// template for the "own script" way (mih.ha_setup). Shown with a button to add what is missing.
+async function fillHaSetup() {
+  const seq = renderSeq;
+  let r;
+  try { r = await api("/ha/setup"); } catch (e) { r = { ok: false, failed: errorText(e) }; }
+  const slot = document.getElementById("ha-setup-slot");
+  if (!slot || seq !== renderSeq) return;
+  if (!r.ok) {
+    slot.innerHTML = String(html`<span class="small">⚠ ${r.failed || PLAY_TEXT[r.error] || t("Ошибка: {0}", r.error)}</span>`);
+    return;
+  }
+  const missing = r.items.some((i) => !i.exists);
+  const [script, voice, own] = r.items.map((i) => i.entity_id);
+  slot.innerHTML = String(html`<div class="kv small">${r.items.map((i) => html`<span>${i.exists ? "✓" : "—"}</span><span>${i.entity_id}</span>`)}</div>
+    ${missing ? html`<div class="row"><button class="btn tv" type="button" id="ha-setup">${t("Создать в Home Assistant")}</button></div>` : ""}
+    <span class="small muted">${t("Скрипт {0} включает канал по названию: его вызывают Assist, автоматизации, панели и внешний агент через MCP Server в HA. Автоматизация {1} — фразы для Assist «включи канал …». Скрипт {2} — шаблон для способа «Через свой скрипт HA». Существующие не перезаписываются.", script, voice, own)}</span>`);
+}
+
 async function fillTopics() {
   const seq = renderSeq;
   try {
@@ -1082,6 +1103,7 @@ async function viewSettings() {
   const current = playAdapter() || adapters?.default || "agent";
   if (adapters?.available.includes("ha")) queueMicrotask(fillHaStatus);
   if (adapters?.available.includes("tv")) queueMicrotask(fillTvs);
+  if (adapters?.ha_setup) queueMicrotask(fillHaSetup);
   const hasToken = Boolean(store.get("mih.token"));
   let adult = null, speed = null;
   try { adult = await api("/settings/adult"); } catch { /* an older server */ }
@@ -1157,7 +1179,9 @@ async function viewSettings() {
     </div>` : ""}
     ${adapters?.available.includes("tv") ? html`<h2>${t("Телевизор")}</h2>
       <div class="field" id="tv-slot"><span class="small muted">${t("Загружаю список ТВ…")}</span></div>
-      <p class="small muted">${t("Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.")}</p>` : ""}
+      <p class="small muted">${t("Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.")}</p>
+      ${adapters.ha_setup ? html`<h2>${t("Скрипты и голосовые команды")}</h2>
+      <div class="field" id="ha-setup-slot"><span class="small muted">${t("Проверяю Home Assistant…")}</span></div>` : ""}` : ""}
     ${speed ? html`<form id="open-speed-form" class="field">
       <label for="open-slow">${t("Порог медленного открытия, секунд")}</label>
       <div class="row"><input id="open-slow" name="slow_s" type="number" inputmode="decimal" step="0.5"
@@ -1745,6 +1769,13 @@ document.addEventListener("click", (e) => {
       })
       .catch((err) => toast(errorText(err), 5000))
       .finally(() => { e.target.disabled = false; });
+    return;
+  }
+  if (e.target.id === "ha-setup") {
+    e.target.disabled = true;
+    api("/ha/setup", { method: "POST" })
+      .then((r) => { toast(r.created.length ? t("Создано в Home Assistant: {0}", r.created.join(", ")) : t("Всё уже есть в Home Assistant"), 6000); return fillHaSetup(); })
+      .catch((err) => { e.target.disabled = false; toast(PLAY_TEXT[err.code] || errorText(err), 6000); });
     return;
   }
   if (e.target.id === "recent-clear") {

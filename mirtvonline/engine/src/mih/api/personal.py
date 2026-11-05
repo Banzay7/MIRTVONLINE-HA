@@ -3,6 +3,7 @@
 import gzip
 import hashlib
 import hmac
+import json
 from datetime import UTC, datetime, timedelta
 from importlib import resources
 from typing import Annotated, Any
@@ -13,7 +14,7 @@ from pydantic import BaseModel, Field
 from starlette.datastructures import Headers
 
 from mih import ha as mih_ha
-from mih import openspeed, playback
+from mih import ha_setup, openspeed, playback
 from mih import tv as mih_tv
 from mih.alerts import GRACE, best_streams, channel_names, find_matches, load_rules, play_key
 from mih.api import adult
@@ -59,6 +60,13 @@ class PlaybackIn(BaseModel):
     # adapter tv: the TV (any of its media_player entities); none = the default TV.
     tv: str | None = Field(default=None, pattern=mih_tv.ENTITY.pattern)
     # The picture to start with (mih.quality); none = MIH_PLAY_QUALITY.
+    quality: str | None = Field(default=None, pattern="^(auto|720|1080|best)$")
+
+
+class PlayByNameIn(BaseModel):
+    # The channel as people say it ("Первый канал"); found like the agent's search.
+    channel: str = Field(min_length=1, max_length=100)
+    tv: str | None = Field(default=None, pattern=mih_tv.ENTITY.pattern)
     quality: str | None = Field(default=None, pattern="^(auto|720|1080|best)$")
 
 
@@ -290,8 +298,47 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
                 playback.wake_agent(settings, cmd, name)
         return JSONResponse(status_code=202 if created else 200, content=cmd)
 
+    @app.post("/api/v1/playback/by-name", status_code=202, dependencies=auth)
+    def play_by_name(request: Request, body: PlayByNameIn, conn: Conn) -> JSONResponse:
+        """Start a channel named in words, the way "На ТВ" does: for Home Assistant
+        (script.mirtv_channel, Assist) and agents that know no channel ids. The
+        best match that plays wins; ``channel`` in the answer says which one it was."""
+        from mih.mcp.tools import Toolbox, ToolError
+
+        box = getattr(request.app.state, "toolbox", None)
+        if box is None:
+            box = request.app.state.toolbox = Toolbox(request.app.state.settings)
+        try:
+            found = box.call(conn, "channels", {"q": body.channel, "limit": 1})["items"]
+        except ToolError as exc:
+            raise error("validation_error", str(exc)) from exc
+        if not found:
+            raise error("not_found", "no channel by that name")
+        pick = found[0]
+        start = PlaybackIn(target=PlaybackTargetIn(channel_id=pick["id"]),
+                           tv=body.tv or None, quality=body.quality)  # fmt: skip
+        resp = play(request, start, conn)
+        cmd = json.loads(resp.body)
+        cmd["channel"] = {"id": pick["id"], "name": pick.get("name")}
+        return JSONResponse(status_code=resp.status_code, content=cmd)
+
+    @app.get("/api/v1/ha/setup", dependencies=auth)
+    def ha_setup_status(request: Request) -> dict:
+        """Which of the add-on's scripts and voice phrases Home Assistant has."""
+        transport = getattr(request.app.state, "ha_transport", None)
+        return ha_setup.status(request.app.state.settings, transport=transport)
+
+    @app.post("/api/v1/ha/setup", dependencies=auth)
+    def ha_setup_create(request: Request) -> dict:
+        """Create in Home Assistant what is missing of them; nothing existing changes."""
+        transport = getattr(request.app.state, "ha_transport", None)
+        try:
+            return ha_setup.create(request.app.state.settings, transport=transport)
+        except mih_ha.HaError as exc:
+            raise error(exc.code, exc.detail or str(exc)) from exc
+
     def _device(conn, body: PlaybackIn, mode: str) -> str:
-        if mode != "tv":
+        if mode not in ("tv", "ha"):
             return body.device_id
         return body.tv or mih_tv.default_tv(conn) or "default"
 
@@ -301,7 +348,9 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
         settings = request.app.state.settings
         available = ["agent"] + (["ha", "tv"] if settings.ha_ready else [])
         script = mih_ha.script_entity(settings) if settings.ha_ready else None
-        return {"default": settings.playback, "available": available, "ha_script": script}
+        return {"default": settings.playback, "available": available, "ha_script": script,
+                # The add-on can create its scripts in HA (Settings → «Создать в HA»).
+                "ha_setup": bool(settings.ha_ready and settings.ha_addon)}
 
     @app.post("/api/v1/playback/ha/check", dependencies=auth)
     def playback_ha_check(request: Request) -> dict:

@@ -146,6 +146,7 @@ def test_play_through_home_assistant_runs_the_script_with_stream_urls(tmp_path):
         "default": "agent",
         "available": ["agent", "ha", "tv"],
         "ha_script": "script.mih_play",
+        "ha_setup": False,
     }
     perviy = _channel(c, "первый")
     resp = c.post("/api/v1/playback/commands",

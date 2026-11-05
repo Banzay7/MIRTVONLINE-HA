@@ -324,6 +324,9 @@ def run_ha(
                     "start_ts": target.get("start"),
                     "catchup_url": catchup_url,
                     "notify_service": ha.notify_entity(settings),
+                    # The TV picked in Settings, for a script that plays on it.
+                    "tv": row["device_id"] if row["device_id"].startswith("media_player.")
+                    else None,
                 }, transport=transport)  # fmt: skip
         except ha.HaError as exc:
             error, detail = exc.code, exc.detail

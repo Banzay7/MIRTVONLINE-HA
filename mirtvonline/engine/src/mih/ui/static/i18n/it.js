@@ -481,5 +481,12 @@
   "«На ТВ» теперь идёт на ТВ через Home Assistant": "«Sulla TV» ora va alla TV tramite Home Assistant",
   "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Prima un comando ADB a VLC o Just Player, poi Google Cast, poi AirPlay. La TV predefinita è salvata sul server e vale per tutti; la scelta in questo browser la sostituisce.",
   "Загружаю список ТВ…": "Caricamento dell’elenco delle TV…",
-  "ТВ по умолчанию сохранён": "TV predefinita salvata"
+  "ТВ по умолчанию сохранён": "TV predefinita salvata",
+  "Доступно только в дополнении Home Assistant.": "Disponibile solo nel componente aggiuntivo di Home Assistant.",
+  "Home Assistant не дал создать скрипт или автоматизацию. Подробности в журнале HA.": "Home Assistant non ha permesso di creare lo script o l’automazione. Dettagli nel registro di HA.",
+  "Создать в Home Assistant": "Crea in Home Assistant",
+  "Скрипт {0} включает канал по названию: его вызывают Assist, автоматизации, панели и внешний агент через MCP Server в HA. Автоматизация {1} — фразы для Assist «включи канал …». Скрипт {2} — шаблон для способа «Через свой скрипт HA». Существующие не перезаписываются.": "Lo script {0} accende un canale per nome: lo chiamano Assist, automazioni, plance e un agente esterno (tramite l’MCP Server di HA). L’automazione {1} contiene le frasi di Assist. Lo script {2} è un modello per la via «script HA proprio». Ciò che esiste non viene mai sovrascritto.",
+  "Скрипты и голосовые команды": "Script e comandi vocali",
+  "Создано в Home Assistant: {0}": "Creato in Home Assistant: {0}",
+  "Всё уже есть в Home Assistant": "Home Assistant ha già tutto"
 };
