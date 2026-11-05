@@ -201,3 +201,19 @@ def test_tv_list_falls_back_to_states_and_reports_ha_errors(tmp_path):
     assert c.get("/api/v1/tv").json() == {"items": [], "default": None,
                                           "error": "ha_unauthorized"}  # fmt: skip
     c.__exit__(None, None, None)
+
+
+def test_addon_without_mcp_offers_no_agent(tmp_path):
+    """In the add-on no agent can take a command unless its MCP port is on: the web UI
+    does not offer the agent, and a browser that kept it gets the TV instead."""
+    fake = FakeHa()
+    c = _client(tmp_path, fake, ha_addon="abc123_mirtvonline")
+    assert c.get("/api/v1/playback/adapters").json()["available"] == ["ha", "tv"]
+    c.put("/api/v1/settings/tv", json={"tv": "media_player.living_room_cast"})
+    cmd = _play(c, adapter="agent").json()
+    assert (cmd["state"], cmd["adapter"]) == ("started", "tv")
+    c.__exit__(None, None, None)
+
+    c = _client(tmp_path / "mcp", FakeHa(), ha_addon="abc123_mirtvonline", mcp_port=8766)
+    assert c.get("/api/v1/playback/adapters").json()["available"] == ["agent", "ha", "tv"]
+    c.__exit__(None, None, None)

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.8
+
+- **Settings** → **The "On TV" button** shows only what works in the add-on: the
+  "Through the agent" choice is gone (no agent can take commands here), and a browser
+  that kept it gets "Straight to the TV". The script way is now called "Through your
+  own HA script" with its script's name.
+- Error texts for this button speak of the add-on, not of server variables
+  (`MIH_HA_URL`, `MIH_HA_SCRIPT`, Tailscale). "No TV chosen" points to **TV**.
+- The open speed says honestly that with "Straight to the TV" it only times how long
+  Home Assistant takes to accept the command; the channel page names this way.
+
 ## 0.1.7
 
 - The **Configuration** tab tells what each option really does. `language` is now

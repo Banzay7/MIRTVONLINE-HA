@@ -111,8 +111,11 @@
 всех»** хранится в дополнении, **«ТВ в этом браузере»** заменяет его для одного
 телефона или компьютера. Если телевизор в HA один, выбирать ничего не нужно.
 
-В **«Настройки»** → **«Кнопка «На ТВ»»** оставьте **«Напрямую на ТВ через Home
-Assistant»**. Вариант **«Через агента»** в дополнении пока не подключён.
+В **«Настройки»** → **«Кнопка «На ТВ»»** обычно выбрано **«Напрямую на ТВ через Home
+Assistant»**, менять ничего не нужно. **«Через свой скрипт HA»** нужен, только если вы
+сами дописали `script.mih_play` (см. ниже): дополнение отдаёт ему адреса потоков, а ТВ
+включает скрипт. Варианта «Через агента» в дополнении нет, для агента есть скрипт
+`script.mirtv_channel`.
 
 Samsung, LG и другие ТВ без Android TV: подключите приставку с Google TV
 (Chromecast с Google TV и похожие), и она появится в HA как обычный телевизор.
@@ -302,8 +305,11 @@ Which TV: site → **Settings** → **TV**. **Default TV for everyone** is kept 
 add-on, **TV in this browser** overrides it for one phone or computer. With a single TV
 in Home Assistant nothing needs picking.
 
-In **Settings** → **The “On TV” button** keep **Straight to the TV through Home
-Assistant**. **Through the agent** is not connected in the add-on yet.
+In **Settings** → **The “On TV” button** **Straight to the TV through Home Assistant**
+is normally chosen; nothing needs changing. **Through your own HA script** is only for
+when you wrote `script.mih_play` yourself (see below): the add-on hands it the stream
+addresses and the script starts the TV. The add-on has no “Through the agent” choice;
+for an agent there is `script.mirtv_channel`.
 
 Samsung, LG and other TVs without Android TV: plug in a Google TV box (Chromecast with
 Google TV and the like); it shows up in Home Assistant as a normal TV.
