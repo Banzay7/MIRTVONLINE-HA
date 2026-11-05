@@ -316,3 +316,20 @@ def test_events_and_job_summaries_come_in_the_web_ui_language(conn, tmp_path):
     assert list_events(conn, lang="vi")[0]["title"] == "Tác vụ «cập nhật danh sách phát» bị lỗi"
     assert list_events(conn)[0]["title"] == "Задача «обновление плейлистов» упала с ошибкой"
     assert list_events(conn, lang="ru")[0]["data"] is None
+
+
+def test_drive_job_only_when_set_up(tmp_path):
+    """Without a Drive token the upload can only fail: Status does not list it and it
+    cannot be started by hand."""
+    from fastapi.testclient import TestClient
+
+    from mih.api.app import create_app
+    from mih.config import Settings
+
+    settings = Settings(data_dir=tmp_path, api_token="t" * 32, ha_addon="abc_mirtvonline")
+    with TestClient(create_app(settings)) as c:
+        c.headers["Authorization"] = "Bearer " + "t" * 32
+        s = c.get("/api/v1/status").json()
+        assert "drive" not in [j["name"] for j in s["jobs"]]
+        assert s["notifications"]["addon"] is True
+        assert c.post("/api/v1/jobs/drive/run").status_code == 422

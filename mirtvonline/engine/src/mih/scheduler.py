@@ -126,6 +126,14 @@ def _every(settings: Settings, name: str) -> timedelta | None:
             "drive": settings.every_drive if settings.drive_token else None}[name]  # fmt: skip
 
 
+def job_offered(settings: Settings, name: str) -> bool:
+    """Is the job worth showing and running here? The Google Drive upload only with its
+    token and folder: without them a run can only fail."""
+    if name == "drive":
+        return bool(settings.drive_token and settings.drive_folder_id)
+    return True
+
+
 def sync_jobs(
     conn: sqlite3.Connection, settings: Settings, now: datetime | None = None
 ) -> list[str]:
@@ -587,7 +595,7 @@ def status_snapshot(conn: sqlite3.Connection, settings: Settings, *,
     now = datetime.now(UTC)
     jobs = []
     for row in conn.execute("SELECT * FROM jobs"):
-        if row["name"] not in JOBS:
+        if row["name"] not in JOBS or not job_offered(settings, row["name"]):
             continue
         jobs.append(
             {
@@ -614,6 +622,8 @@ def status_snapshot(conn: sqlite3.Connection, settings: Settings, *,
             "channel": "ntfy" if settings.ntfy_url else None,
             "level": settings.notify_level,
             "lang": settings.lang,
+            # Inside the add-on pushes cannot be set up: the screen says so, not MIH_NTFY_URL.
+            "addon": bool(settings.ha_addon),
         },  # fmt: skip
         "running": [
             {"job": j["name"], "since": j["running_since"]} for j in jobs if j["running_since"]
