@@ -146,7 +146,7 @@
         "“{{Выдача}}”: hiển thị bao nhiêu kết quả một lần, logo kênh, có ẩn kênh không có luồng hoạt động hay không.",
         "“{{Подсказки}}” → “{{Показать все подсказки снова}}” bật lại các gợi ý “{{Как пользоваться}}” trên mọi trang.",
         "Cài đặt kết quả, tìm kiếm, ngôn ngữ và TV của trình duyệt này được lưu trong trình duyệt; chế độ 18+, mục yêu thích, thể loại thủ công và TV mặc định được lưu trong tiện ích.",
-        "Ngôn ngữ thông báo, hồ sơ dữ liệu, quốc gia nhà và múi giờ không đổi ở đây mà trong Home Assistant: “Cài đặt” → “Tiện ích bổ sung” (bản mới là “Ứng dụng”) → MIRTVONLINE → “Cấu hình”."
+        "Ngôn ngữ thông báo và kịch bản, hồ sơ dữ liệu, quốc gia nhà, ngôn ngữ kênh, múi giờ và token GitHub không đổi ở đây mà trong Home Assistant: “Cài đặt” → “Tiện ích bổ sung” (bản mới là “Ứng dụng”) → MIRTVONLINE → “Cấu hình”."
       ]
     }
   ]

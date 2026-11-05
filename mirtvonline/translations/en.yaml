@@ -1,28 +1,36 @@
 configuration:
   language:
-    name: Interface language
-    description: Language of the web UI and of the notifications.
+    name: Notification and script language
+    description: >-
+      Home Assistant notifications, events and digests on the site, names and voice
+      phrases of the scripts the "Create in Home Assistant" button makes. The site's own
+      language is picked in the browser: site → Settings → Interface language.
   profile:
     name: Data profile
     description: >-
-      S: one country and language, works on any 4 GB box (HA Green).
-      M: several countries, needs a Raspberry Pi 5 or a mini PC.
-      L: the whole world, mini PC only.
+      How many streams to take from found playlists. S: up to 6,000, fine for a 4 GB
+      box (HA Green). M: up to 15,000, Raspberry Pi 5 or a mini PC. L: up to 30,000 and
+      8 checks at once instead of 4, mini PC only. Your own playlists don't count.
   home_country:
     name: Home country
     description: >-
-      Two letters, e.g. de. Channels of this country are kept even if they look
-      blocked from here. Empty: the setup wizard asks.
+      Two-letter country code, e.g. de. Channels of this country come first at the
+      profile's limit and get into the catalog even if they look geo-blocked from the
+      server. Empty: no such exceptions.
   channel_languages:
     name: Channel languages
     description: >-
-      E.g. ru, en. Channels in these languages and of the home country come first
-      when the profile's stream limit is reached. Empty: the add-on's language.
+      Language codes separated by commas, e.g. ru, en. Channels in these languages come
+      first once the profile's limit is reached (along with home-country channels and
+      favourites). Empty: the language from the first option.
   timezone:
     name: Time zone
-    description: For the TV guide, e.g. Europe/Berlin. Empty uses the time zone of Home Assistant.
+    description: >-
+      For the TV guide and the nightly job schedule, e.g. Europe/Berlin. Empty: Home
+      Assistant's time zone.
   github_token:
     name: GitHub token
     description: >-
-      Optional. Any token without scopes; lets the playlist search use GitHub code
-      search. Without it only repository search runs.
+      Optional. Any token with no permissions (GitHub → Settings → Developer settings →
+      Personal access tokens). With it the playlist search also searches code on GitHub
+      and finds more. Without it only repositories are searched.

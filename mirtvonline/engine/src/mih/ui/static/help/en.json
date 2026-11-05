@@ -146,7 +146,7 @@
         "“{{Выдача}}”: how many to show at once, channel logos, whether to hide channels without working streams.",
         "“{{Подсказки}}” → “{{Показать все подсказки снова}}” brings the “{{Как пользоваться}}” tips back on every page.",
         "Result, search, language and per-browser TV settings are kept in the browser; the 18+ mode, favourites, manual categories and the default TV are kept in the add-on.",
-        "The notification language, data profile, home country and time zone are changed not here but in Home Assistant: “Settings” → “Add-ons” (“Apps” in newer versions) → MIRTVONLINE → “Configuration”."
+        "The notification and script language, data profile, home country, channel languages, time zone and GitHub token are changed not here but in Home Assistant: “Settings” → “Add-ons” (“Apps” in newer versions) → MIRTVONLINE → “Configuration”."
       ]
     }
   ]
