@@ -444,7 +444,7 @@ def _job_pack(conn, settings, policy, now, transport) -> Outcome:
     report = pack(conn, settings, load_plan(settings.discovery_file), policy, now,
                   transport=transport)  # fmt: skip
     data = report.stats()
-    if report.capped:
+    if report.capped and not report.packed:
         title = t(settings, "job.pack.capped", n=settings.discovery_max_streams)
         return Outcome("ok", "routine", title, data=data, quiet=True)
     if report.offline:
@@ -459,6 +459,8 @@ def _job_pack(conn, settings, policy, now, transport) -> Outcome:
     title = t(settings, "job.pack", channels=report.channels_created,
               streams=report.streams_created)  # fmt: skip
     lines = [report.playlist]
+    if report.evicted:
+        lines.append(t(settings, "job.pack.evicted", n=report.evicted))
     if report.remaining:
         lines.append(t(settings, "job.pack.progress", checked=report.checked,
                        remaining=report.remaining))  # fmt: skip

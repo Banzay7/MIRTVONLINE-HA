@@ -101,6 +101,9 @@ def build_env(options: dict, environ: dict[str, str], data_dir: Path) -> dict[st
     country = str(options.get("home_country") or "").strip().lower()
     if country:
         env["MIH_HOME_COUNTRY"] = country[:2]
+    # Languages of your channels: with the home country they stay first when found
+    # playlists reach the profile's stream limit. Not set: the add-on's language.
+    env["MIH_CHANNEL_LANGUAGES"] = str(options.get("channel_languages") or "").strip() or language
     if options.get("github_token"):
         env["MIH_GITHUB_TOKEN"] = str(options["github_token"])
 

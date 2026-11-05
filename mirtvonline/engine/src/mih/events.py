@@ -176,6 +176,11 @@ TEXTS = {
         "ru": "Упаковщик на паузе: в найденных плейлистах уже {n} потоков"
         " (MIH_DISCOVERY_MAX_STREAMS)",
     },
+    "job.pack.evicted": {
+        "en": "stream limit: {n} found streams of other channels removed to make room for yours",
+        "ru": "лимит потоков: убрано {n} найденных потоков других каналов, чтобы освободить"
+        " место для ваших",
+    },
     "job.drive": {
         "en": "Google Drive: {channels} channels uploaded",
         "ru": "Google Диск: выложено каналов {channels}",
@@ -328,6 +333,8 @@ _VI = {
     "job.pack.idle": "Đóng gói: không có danh sách phát sống nào đang chờ",
     "job.pack.capped": "Đóng gói tạm dừng: các danh sách tìm được đã có {n} luồng"
     " (MIH_DISCOVERY_MAX_STREAMS)",
+    "job.pack.evicted": "giới hạn luồng: đã gỡ {n} luồng tìm được của kênh khác để nhường"
+    " chỗ cho kênh của bạn",
     "job.drive": "Google Drive: đã tải lên {channels} kênh",
     "job.drive.unchanged": "Google Drive: danh sách kênh không đổi, không tải lên",
     "job.drive.failed": "Không tải được danh sách kênh lên Google Drive",

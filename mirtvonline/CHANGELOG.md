@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.6
+
+- Your channels first at the stream limit. The profile caps found streams (S 6,000,
+  M 15,000, L 30,000); your own playlists are not counted. Channels of the home country,
+  in your channels' languages and favourites are checked first; once the limit is
+  reached, only they are added, and found streams of other channels (broken ones first)
+  make room for them. Your channels are never removed.
+- New option `channel_languages` (e.g. `ru, en`); empty means the add-on's language.
+
 ## 0.1.5
 
 - Channels start from Home Assistant itself. The site's **Settings** → **Scripts and

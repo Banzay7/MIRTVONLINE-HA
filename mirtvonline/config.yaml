@@ -1,5 +1,5 @@
 name: MIRTVONLINE
-version: "0.1.5"
+version: "0.1.6"
 slug: mirtvonline
 description: Catalog, TV guide and search for live TV channels from your own and public playlists
 url: https://github.com/Banzay7/MIRTVONLINE-HA
@@ -30,5 +30,6 @@ schema:
   language: list(ru|en|vi)
   profile: list(S|M|L)
   home_country: match(^[A-Za-z]{2}$)?
+  channel_languages: str?
   timezone: str?
   github_token: password?

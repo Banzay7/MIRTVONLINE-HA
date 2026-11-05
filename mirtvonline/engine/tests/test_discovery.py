@@ -363,3 +363,100 @@ def test_jobs_run_quietly_from_the_scheduler(conn, settings, fake_dns):
                     transport=httpx.MockTransport(lambda r: httpx.Response(404)))  # fmt: skip
     assert event["data"]["status"] == "ok"
     assert event["data"]["totals"]["found"] >= len(SEED_PLAYLISTS)
+
+
+# --- stream limit: your channels first ------------------------------------------------
+
+
+def tagged(*items: tuple[str, str]) -> bytes:
+    """(tvg-id, url) pairs."""
+    lines = ["#EXTM3U"]
+    for tvg, url in items:
+        lines += [f'#EXTINF:-1 tvg-id="{tvg}",{tvg.split(".")[0]}', url]
+    return ("\n".join(lines) + "\n").encode()
+
+
+def auto_urls(conn) -> list[str]:
+    return sorted(r[0] for r in conn.execute(
+        "SELECT l.url FROM streams s JOIN stream_locators l ON l.stream_id = s.id"
+        " WHERE s.source_id IN (SELECT source_id FROM discovered_playlists)"))  # fmt: skip
+
+
+def test_below_the_limit_your_channels_are_checked_first(conn, settings, fake_dns):
+    settings = Settings(data_dir=settings.data_dir, discovery_pack_batch=2, home_country="de")
+    content = tagged(("Fox.us", "https://us.example/live1.m3u8"),
+                     ("Cnn.us", "https://us.example/live2.m3u8"),
+                     ("Zdf.de", "https://de.example/live3.m3u8"),
+                     ("Ard.de", "https://de.example/live4.m3u8"))  # fmt: skip
+    seen: list[str] = []
+    transport = web({"lists.example/a.m3u": httpx.Response(200, content=content)}, seen)
+    add_candidate(conn, "https://lists.example/a.m3u")
+    scout(conn, settings, Plan(), POLICY, NOW, transport=transport)
+    conn.execute("DELETE FROM discovery_urls")  # forget the sample: probe everything
+    seen.clear()
+    pack(conn, settings, Plan(), POLICY, NOW, transport=transport)
+    assert {s.split("/")[0] for s in seen} == {"de.example"}
+
+
+def test_at_the_limit_yours_replace_other_found_streams(conn, settings, fake_dns, make_source):
+    roomy = Settings(data_dir=settings.data_dir, home_country="de", channel_languages=("ru",))
+    own = make_source("mine")
+    import_m3u(conn, roomy, own, tagged(("Bbc.uk", "https://uk.example/live0.m3u8")))
+    first = tagged(("Fox.us", "https://us.example/live1.m3u8"),
+                   ("Cnn.us", "https://us.example/live2.m3u8"),
+                   ("Abc.us", "https://us.example/live3.m3u8"))  # fmt: skip
+    second = (
+        tagged(("Zdf.de", "https://de.example/live4.m3u8"),
+               ("Nbc.us", "https://us.example/live5.m3u8"))  # fmt: skip
+        + b'#EXTINF:-1 tvg-language="Russian",Pervyi\nhttps://ru.example/live6.m3u8\n'
+    )
+    transport = web({"lists.example/first.m3u": httpx.Response(200, content=first),
+                     "lists.example/second.m3u": httpx.Response(200, content=second)})
+    add_candidate(conn, "https://lists.example/first.m3u")
+    scout(conn, roomy, Plan(), POLICY, NOW, transport=transport)
+    pack(conn, roomy, Plan(), POLICY, NOW, transport=transport)
+    assert len(auto_urls(conn)) == 3
+    # Fox is a favourite: never removed.
+    fox = conn.execute("SELECT channel_id FROM channel_aliases WHERE kind = 'tvg-id'"
+                       " AND value = 'fox.us'").fetchone()[0]  # fmt: skip
+    conn.execute("INSERT INTO favorites VALUES ('default', 'channel', ?, 1, ?)",
+                 (fox, format_ts(NOW)))  # fmt: skip
+
+    full = Settings(data_dir=settings.data_dir, home_country="de", channel_languages=("ru",),
+                    discovery_max_streams=3)  # fmt: skip
+    add_candidate(conn, "https://lists.example/second.m3u")
+    report = scout(conn, full, Plan(), POLICY, NOW, transport=transport)
+    assert report.by_status == {"live": 1}
+    out = pack(conn, full, Plan(), POLICY, NOW, transport=transport)
+    assert (out.streams_created, out.evicted, out.done) == (2, 2, True)
+    assert auto_urls(conn) == ["https://de.example/live4.m3u8", "https://ru.example/live6.m3u8",
+                               "https://us.example/live1.m3u8"]  # fmt: skip
+    # Your own playlist is not counted and not touched; emptied channels are gone.
+    mine = conn.execute("SELECT COUNT(*) FROM streams WHERE source_id = ?", (own,))
+    assert mine.fetchone()[0] == 1
+    names = {r[0] for r in conn.execute("SELECT canonical_name FROM channels")}
+    assert "Cnn" not in names and "Nbc" not in names
+
+
+def test_at_the_limit_a_playlist_with_nothing_of_yours_waits(conn, settings, fake_dns):
+    full = Settings(data_dir=settings.data_dir, home_country="de", discovery_max_streams=1)
+    transport = web({
+        "lists.example/a.m3u": httpx.Response(
+            200, content=tagged(("Fox.us", "https://us.example/live1.m3u8"))),
+        "lists.example/b.m3u": httpx.Response(
+            200, content=tagged(("Cnn.us", "https://us.example/live2.m3u8"))),
+    })  # fmt: skip
+    add_candidate(conn, "https://lists.example/a.m3u")
+    scout(conn, full, Plan(), POLICY, NOW, transport=transport)
+    pack(conn, full, Plan(), POLICY, NOW, transport=transport)
+    assert len(auto_urls(conn)) == 1
+    add_candidate(conn, "https://lists.example/b.m3u")
+    report = scout(conn, full, Plan(), POLICY, NOW, transport=transport)
+    # Nothing of yours to sample: no probes, nothing waits for the packer.
+    assert report.by_status == {"known": 1} and report.probes == 0
+
+
+def test_channel_languages_from_env():
+    s = Settings.from_env({"MIH_CHANNEL_LANGUAGES": "ru, English;vi ru"})
+    assert s.channel_languages == ("ru", "en", "vi")
+    assert Settings.from_env({}).channel_languages == ()
