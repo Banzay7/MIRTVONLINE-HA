@@ -142,7 +142,7 @@
       "title": "Settings and language",
       "items": [
         "“{{Язык интерфейса}}”: 20 languages, the three main ones (Russian, English, Vietnamese) at the top. The language is remembered in this browser. Help is in Russian, English and Vietnamese; for the other languages it is in English.",
-        "Texts that come from the server (events, digests) are in the language chosen in the add-on's options in Home Assistant: Russian, English or Vietnamese.",
+        "Texts that come from the server (events and job summaries on the “{{Статус}}” page) are in the interface language when it is Russian, English or Vietnamese, and in English for the other languages. The language in the add-on's options in Home Assistant sets the HA notifications and the names and phrases of the created scripts.",
         "“{{Выдача}}”: how many to show at once, channel logos, whether to hide channels without working streams.",
         "“{{Подсказки}}” → “{{Показать все подсказки снова}}” brings the “{{Как пользоваться}}” tips back on every page.",
         "Result, search, language and per-browser TV settings are kept in the browser; the 18+ mode, favourites, manual categories and the default TV are kept in the add-on.",

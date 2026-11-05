@@ -142,7 +142,7 @@
       "title": "Cài đặt và ngôn ngữ",
       "items": [
         "“{{Язык интерфейса}}”: 20 ngôn ngữ, ba ngôn ngữ chính (tiếng Nga, tiếng Anh, tiếng Việt) ở đầu danh sách. Ngôn ngữ được ghi nhớ trong trình duyệt này. Trợ giúp có bằng tiếng Nga, tiếng Anh và tiếng Việt; với các ngôn ngữ khác, trợ giúp hiện bằng tiếng Anh.",
-        "Văn bản từ máy chủ (sự kiện, bản tóm tắt) hiển thị bằng ngôn ngữ đã chọn trong tùy chọn của tiện ích trong Home Assistant: tiếng Nga, tiếng Anh hoặc tiếng Việt.",
+        "Văn bản từ máy chủ (sự kiện và tóm tắt tác vụ trên trang “{{Статус}}”) hiển thị bằng ngôn ngữ giao diện nếu đó là tiếng Nga, tiếng Anh hoặc tiếng Việt, còn với các ngôn ngữ khác thì bằng tiếng Anh. Ngôn ngữ trong tùy chọn của tiện ích trong Home Assistant quyết định thông báo trong HA cùng tên và câu lệnh của các kịch bản đã tạo.",
         "“{{Выдача}}”: hiển thị bao nhiêu kết quả một lần, logo kênh, có ẩn kênh không có luồng hoạt động hay không.",
         "“{{Подсказки}}” → “{{Показать все подсказки снова}}” bật lại các gợi ý “{{Как пользоваться}}” trên mọi trang.",
         "Cài đặt kết quả, tìm kiếm, ngôn ngữ và TV của trình duyệt này được lưu trong trình duyệt; chế độ 18+, mục yêu thích, thể loại thủ công và TV mặc định được lưu trong tiện ích.",

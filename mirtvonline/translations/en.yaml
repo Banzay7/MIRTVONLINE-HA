@@ -2,9 +2,9 @@ configuration:
   language:
     name: Notification and script language
     description: >-
-      Home Assistant notifications, events and digests on the site, names and voice
-      phrases of the scripts the "Create in Home Assistant" button makes. The site's own
-      language is picked in the browser: site → Settings → Interface language.
+      Home Assistant notifications, names and voice phrases of the scripts the "Create
+      in Home Assistant" button makes. The site, its events and job summaries included,
+      uses the language picked in the browser: site → Settings → Interface language.
   profile:
     name: Data profile
     description: >-

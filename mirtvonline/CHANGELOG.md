@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10
+
+- Language texts tell the truth: events and job summaries on the site follow the
+  site's interface language (ru, en, vi; English for the others), not the add-on's
+  `language` option, which sets Home Assistant notifications and the created scripts.
+- **Documentation**: the schedule also lists topic alerts (every 5 min) and the daily
+  digest (09:00) that the **Status** page shows.
+
 ## 0.1.9
 
 - **Status** no longer lists "Upload to Google Drive": the add-on has no Drive set up,

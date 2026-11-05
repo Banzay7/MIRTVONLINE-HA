@@ -70,7 +70,7 @@
 
 | Настройка | Что делает |
 |---|---|
-| **Язык уведомлений и скриптов** (`language`) | ru, en или vi. Язык уведомлений в Home Assistant, событий и сводок сервера, а также названий и голосовых фраз скриптов, которые создаёт кнопка «Создать в Home Assistant». Язык самого сайта выбирается в браузере: **«Настройки»** → **«Язык интерфейса»** (по умолчанию язык браузера) |
+| **Язык уведомлений и скриптов** (`language`) | ru, en или vi. Язык уведомлений в Home Assistant, а также названий и голосовых фраз скриптов, которые создаёт кнопка «Создать в Home Assistant». Сайт, включая события и сводки задач на странице «Статус», показывается на языке из браузера: **«Настройки»** → **«Язык интерфейса»** (по умолчанию язык браузера; события и сводки бывают только на ru, en, vi, для остальных языков по-английски) |
 | **Профиль данных** (`profile`) | Сколько потоков дополнение набирает из найденных плейлистов: S — до 6 000 (любой сервер с 4 ГБ), M — до 15 000 (Raspberry Pi 5, мини-ПК), L — до 30 000 (мини-ПК). В профиле L одновременно проверяется 8 потоков вместо 4. Ваши собственные плейлисты в лимит не входят и никогда не удаляются |
 | **Страна дома** (`home_country`) | Две буквы, например `de`. Каналы этой страны идут первыми, когда набран лимит профиля, и попадают в каталог, даже если с сервера выглядят заблокированными по стране. Пусто: таких поблажек нет |
 | **Языки каналов** (`channel_languages`) | Коды языков через запятую, например `ru, en`. Когда набран лимит профиля, дополнение дальше берёт только каналы на этих языках, страны дома и избранные, а место освобождает за счёт худших прочих найденных потоков. Пусто: язык из первой настройки |
@@ -90,6 +90,8 @@
 | Обновление плейлистов (только ваши добавленные) | раз в сутки |
 | Обновление телепрограммы | раз в сутки в 03:30 по часовому поясу дополнения |
 | Проверка потоков | раз в неделю |
+| Оповещения по темам | каждые 5 мин: напоминание в «События» за 15 мин до передачи по вашей теме |
+| Сводка за сутки | ежедневно в 09:00, итог дня в «События» |
 
 Задачу можно запустить вручную: сайт → **«Статус»** → **«Запустить»**.
 
@@ -264,7 +266,7 @@ The **Configuration** tab. After a change press **Save**, then **Restart** on th
 
 | Option | What it does |
 |---|---|
-| **Notification and script language** (`language`) | ru, en or vi. The language of Home Assistant notifications, the server's events and summaries, and the names and voice phrases of the scripts **Create in Home Assistant** makes. The site's own language is picked in the browser: **Settings** → **Interface language** (default: the browser's language) |
+| **Notification and script language** (`language`) | ru, en or vi. The language of Home Assistant notifications and of the names and voice phrases of the scripts **Create in Home Assistant** makes. The site, the events and job summaries on its **Status** page included, uses the language picked in the browser: **Settings** → **Interface language** (default: the browser's language; events and summaries exist in ru, en and vi only, other languages get English) |
 | **Data profile** (`profile`) | How many streams the add-on takes from the playlists it finds: S up to 6,000 (any 4 GB box), M up to 15,000 (Raspberry Pi 5, mini PC), L up to 30,000 (mini PC). Profile L checks 8 streams at once instead of 4. Your own playlists don't count towards the limit and are never removed |
 | **Home country** (`home_country`) | Two letters, e.g. `de`. Channels of this country come first once the profile's limit is reached, and get into the catalog even if they look geo-blocked from the server. Empty: no such exceptions |
 | **Channel languages** (`channel_languages`) | Language codes separated by commas, e.g. `ru, en`. Once the profile's limit is reached the add-on only takes channels in these languages, of the home country and favourites, making room by dropping the worst other found streams. Empty: the language from the first option |
@@ -284,6 +286,8 @@ things do not show up instantly.
 | Your playlists (only the ones you added) | daily |
 | TV guide | daily at 03:30, add-on time zone |
 | Re-check of working streams | weekly |
+| Topic alerts | every 5 min: a reminder under Events 15 min before a programme on your topic |
+| Daily digest | daily at 09:00, the day's summary under Events |
 
 Run a job by hand: site → **Status** → **Run**.
 
