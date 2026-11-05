@@ -10,7 +10,7 @@
     "favorites": "Channels and programmes marked with ★ are here. Add a topic, for example “football”: before such a programme starts a reminder shows up in “{{События}}” on the “{{Статус}}” page, and if pushes are set up you get a push too.",
     "coverage": "How many channels the catalog has, how many of them work right now and how many have a programme guide. The numbers change when the catalog is rebuilt, at most once an hour.",
     "status": "What the add-on is doing: background jobs (one at a time), their schedule, the latest events and the disk space used. A job can be started by hand with the “{{Запустить}}” button.",
-    "settings": "Change the interface language, 18+ channels, the number of results, the search mode, the TV for the “{{На ТВ}}” button and the launch quality here. You can also bring the tips back from here."
+    "settings": "Change the interface language, 18+ channels, the number of results, the search mode, the TV for the “{{На ТВ}}” button, the Home Assistant scripts for voice and an agent, and the launch quality here. You can also bring the tips back from here."
   },
   "access": {
     "ha": "Not needed: you came in through the Home Assistant sidebar, and HA has already checked your login and password. The add-on made the key for this install by itself.",
@@ -103,10 +103,25 @@
         "“{{На ТВ}}” turns the channel on on a TV that Home Assistant already knows. No script of your own is needed: the add-on finds the TVs among HA's media players and shows the entities of one TV (for example ADB and Google Cast of the same Android TV) as one TV.",
         "The order of attempts: first ADB (the Android Debug Bridge integration) opens the stream in VLC, else in Just Player, and turns on a TV that is off; then Google Cast; then AirPlay; then any HA media player that can open a link. For ADB install VLC or Just Player on the TV from Google Play.",
         "Which TV to use is chosen in “{{Настройки}}” → “{{Телевизор}}”: “{{ТВ по умолчанию для всех}}” is kept in the add-on, “{{ТВ в этом браузере}}” replaces it for one phone or computer. With a single TV in Home Assistant nothing needs picking.",
-        "In “{{Настройки}}” → “{{Кнопка «На ТВ»}}” keep “Straight to the TV through Home Assistant”. The “Through the agent” choice is only for a server with an agent of its own connected; without one the command waits and ends with “The agent did not take the command”.",
+        "In “{{Настройки}}” → “{{Кнопка «На ТВ»}}” keep “Straight to the TV through Home Assistant”. The add-on does not connect the “Through the agent” choice yet: the command waits and ends with “The agent did not take the command”. Turning channels on by voice and from an AI agent is in “Voice, scripts and an agent”.",
         "“{{Качество при запуске}}”: “Up to 720p” starts faster and buffers less (the default), “Best” gives the highest quality, “Auto” leaves the choice to the player.",
         "Every launch with “{{На ТВ}}” is timed. A channel's speed is the median of its last 10 openings: ⚡ fast, ✓ normal, 🐢 slow, 🐢🐢 very slow. Slow channels go to the end of lists. The threshold is set in “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (5 s by default); the channel page shows its “{{Скорость открытия на ТВ}}” history.",
         "Samsung, LG and other TVs without Android TV: plug in a Google TV box (Chromecast with Google TV and the like), and it shows up in Home Assistant as an ordinary TV."
+      ]
+    },
+    {
+      "id": "agent",
+      "title": "Voice, scripts and an agent",
+      "items": [
+        "The “{{На ТВ}}” button on the site needs no scripts. Scripts are for turning a channel on from Home Assistant itself: by voice through Assist, from automations, from dashboards and from an AI agent.",
+        "To make them: “{{Настройки}}” → “{{Скрипты и голосовые команды}}” → “{{Создать в Home Assistant}}”. The same block shows what is already there (✓) and what is missing (—); the button goes away once everything exists. Existing scripts and automations are never overwritten. Edit them in Home Assistant: “Settings” → “Automations & scenes” → “Scripts” or “Automations”.",
+        "Three things are made. The script script.mirtv_channel “MIRTVONLINE: включить канал” (turn on a channel) turns a channel on by name: the channel field is the channel's name, the tv field is a media player and optional (without it, the default TV). The automation “MIRTVONLINE: голосом «включи канал …»” adds the Assist phrases. The script script.mih_play “MIRTVONLINE: свой запуск потока” is a template for those who want to start the stream their own way.",
+        "Assist without AI: the phrases “play channel …”, “turn on channel …”, “put on channel …”, “switch to channel …” and “watch … on tv” work right away, for example “play channel BBC One”. In Russian: «включи канал …», «включи на телевизоре …», «поставь канал …», «переключи на канал …», «канал …».",
+        "Assist with AI (OpenAI, Anthropic, Ollama and others): expose the script to it. In Home Assistant: “Settings” → “Voice assistants” → the “Expose” tab → “+ Expose entities” → “MIRTVONLINE: включить канал”. Then speak freely: “put BBC One on the living room TV”.",
+        "An external AI agent (Claude and others): in Home Assistant add the “Model Context Protocol Server” integration (“Settings” → “Devices & services” → “+ Add integration”) and expose the script to Assist as above. The agent connects to http://<HA address>:8123/api/mcp with a Home Assistant long-lived token (“Profile” → “Security” → “Create token”) and sees the script as a tool. That is HA's own token, not MIH_API_TOKEN.",
+        "The agent passes only the channel's name, as people say it. The add-on finds the channel, picks the best stream and starts it on the TV. If the channel did not start (not found, no working stream, TV unavailable), Home Assistant shows the notification “MIRTVONLINE: канал не включился” (the channel did not start).",
+        "From an automation or a dashboard: the script.mirtv_channel action with data channel: “BBC One” and, if needed, tv: your media_player.",
+        "The “Through the agent” choice in “{{Настройки}}” → “{{Кнопка «На ТВ»}}” is something else: there an agent of your own connects to the server's own MCP. The add-on does not offer that yet, so for an agent use the script as described above."
       ]
     },
     {
