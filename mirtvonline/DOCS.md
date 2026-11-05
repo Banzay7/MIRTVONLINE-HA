@@ -109,6 +109,10 @@
 3. **AirPlay** (интеграция Apple TV).
 4. Любой другой медиаплеер HA, который умеет открывать ссылку (DLNA и т. п.).
 
+После команды дополнение ждёт, пока Home Assistant сообщит, что ТВ показывает поток.
+Если поток не заиграл за 15 секунд, тем же способом отправляется следующий поток
+канала, всего до трёх. Время до картинки идёт в скорость открытия канала (⚡ ✓ 🐢).
+
 Какой ТВ включать: сайт → **«Настройки»** → **«Телевизор»**. **«ТВ по умолчанию для
 всех»** хранится в дополнении, **«ТВ в этом браузере»** заменяет его для одного
 телефона или компьютера. Если телевизор в HA один, выбирать ничего не нужно.
@@ -304,6 +308,11 @@ tries, in order:
 2. **Google Cast**.
 3. **AirPlay** (Apple TV integration).
 4. Any other media player that can play a link (DLNA and the like).
+
+After the command the add-on waits until Home Assistant says the TV is showing the
+stream. If it does not play within 15 seconds, the channel's next stream goes the same
+way, up to three in all. The time until the picture counts toward the channel's open
+speed (⚡ ✓ 🐢).
 
 Which TV: site → **Settings** → **TV**. **Default TV for everyone** is kept in the
 add-on, **TV in this browser** overrides it for one phone or computer. With a single TV

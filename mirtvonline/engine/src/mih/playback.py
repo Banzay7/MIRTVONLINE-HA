@@ -15,8 +15,11 @@ user's Home Assistant script with the stream URLs and waits for it (mih.ha). The
 script ran = started, it raised or HA did not answer = failed with an ``ha_*`` error.
 MIH_PLAYBACK=tv (the add-on), or ``adapter: "tv"``: no script either. MIH starts the
 best stream on a TV of Home Assistant itself (mih.tv: ADB intent to VLC or Just Player,
-then Google Cast, then AirPlay). The command's device_id is the TV's media_player entity
-(none = the default TV); ``detail`` says which way started it.
+then Google Cast, then AirPlay) and waits until HA says it plays; a stream that does not
+play in time gives way to the next picked one. The command's device_id is the TV's
+media_player entity (none = the default TV); ``detail`` says which way started it, or
+``unconfirmed`` when HA accepted it but never said it plays; ``failed`` lists the streams
+that did not play in time.
 Each command keeps the times of its steps in ``stages`` (accepted, ha_called,
 ha_finished, started/failed) with no URLs or tokens.
 """
@@ -295,6 +298,9 @@ def run_ha(
             if not catchup_url:
                 detail = "live_no_catchup"
     stages = json.loads(row["stages"] or "{}")
+    launch = None  # mih.tv's answer: which stream plays and whether HA saw it
+    failed: list[str] = []
+    playing = picked[0] if picked else None
     if not picked:
         error = "no_stream"
     else:
@@ -310,7 +316,12 @@ def run_ha(
                 from mih import tv
 
                 tv_id = row["device_id"] if row["device_id"] != "default" else None
-                detail = tv.launch(settings, tv_id, catchup_url or urls[0], transport=transport)
+                tries = [catchup_url] if catchup_url else urls
+                launch = tv.play(settings, tv_id, tries, transport=transport)
+                # The spares before the one that played did not start in time.
+                failed = picked[: launch.index] if not catchup_url else []
+                playing = picked[launch.index] if not catchup_url else picked[0]
+                detail = launch.way if launch.confirmed else "unconfirmed"
             else:
                 ha.run_script(settings, {
                     "url": urls[0],
@@ -333,17 +344,23 @@ def run_ha(
         stages["ha_finished"] = _stamp()
     state = "failed" if error else "started"
     stages[state] = _stamp()
-    # The script returns once the player is in front and got "Play": the open time as
-    # the household waits for it, from the button. A timeout is a slow open at least.
+    if launch is not None and launch.confirmed:
+        stages["playing"] = stages["started"]
+    # The open time as the household waits for it, from the button. The script returns
+    # once the player is in front and got "Play"; "tv" waits until HA says the stream
+    # plays. A timeout, or a TV that never said it plays, is a slow open at least.
     if state == "started" or error == "ha_timeout":
         took = openspeed.ms_between(stages, "accepted", state)
+        slow = state != "started" or (launch is not None and not launch.confirmed)
         openspeed.record(conn, target["channel_id"], took, source=row["adapter"] or "ha",
-                         outcome="opened" if state == "started" else "slow",
-                         stream_id=picked[0] if picked else None, command_id=cmd_id)  # fmt: skip
+                         outcome="slow" if slow else "opened",
+                         stream_id=playing, command_id=cmd_id)  # fmt: skip
+    if launch is not None and launch.confirmed and playing:
+        _seen_playing(conn, playing, datetime.now(UTC))
     conn.execute(
         "UPDATE playback_commands SET state = ?, stream_id = COALESCE(?, stream_id), offered = ?,"
-        " finished_at = ?, error = ?, detail = ?, stages = ? WHERE id = ?",
-        (state, picked[0] if picked else None, json.dumps(picked),
+        " failed = ?, finished_at = ?, error = ?, detail = ?, stages = ? WHERE id = ?",
+        (state, playing, json.dumps(picked), json.dumps(failed) if failed else None,
          utc_now(), error, detail, json.dumps(stages), cmd_id),
     )  # fmt: skip
     return get_command(conn, cmd_id)

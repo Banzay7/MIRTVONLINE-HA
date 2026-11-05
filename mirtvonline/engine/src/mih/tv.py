@@ -15,7 +15,12 @@ A launch tries the TV's ways in this order and stops at the first that HA accept
 3. **AirPlay** (``apple_tv``): ``media_player.play_media``.
 4. Any other media player that can play a URL (DLNA and the like).
 
-HA accepting the call counts as started: the TV gives no word on the picture itself.
+HA accepting the call is not the picture yet. After it MIH watches the entity in HA until
+it says ``playing`` this very stream (``media_content_id`` is the stream's address, or the
+player went from something else to ``playing``). That moment is the real open time. A
+stream that does not play within ``MIH_TV_WAIT_S`` seconds (15 by default) is replaced by
+the next of the picked ones on the same way, up to three in all. When none was seen
+playing, the launch counts as started but unconfirmed: some TVs never report it.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ import json
 import re
 import shlex
 import sqlite3
+import time
 from dataclasses import dataclass, field
 
 import httpx
@@ -40,6 +46,11 @@ PLAY_MEDIA = 512
 # Players on the TV that take a stream from an intent: package names, best first.
 PLAYERS = (("vlc", "org.videolan.vlc"), ("just", "com.brouken.player"))
 ENTITY = re.compile(r"^media_player\.[a-z0-9_]{1,120}$")
+# How often the entity's state is asked while waiting for the picture, seconds.
+POLL_S = 0.5
+# Replaced in tests, so waiting takes no real time.
+_clock = time.monotonic
+_sleep = time.sleep
 
 # One request gives every media player with its device and integration.
 _TEMPLATE = """{%- set ns = namespace(rows=[]) -%}
@@ -199,11 +210,15 @@ def _state(client, settings, entity_id: str) -> dict:
     return body if isinstance(body, dict) else {}
 
 
-def _adb(client, settings, entity: dict, url: str) -> str:
+def _adb(client, settings, entity: dict, url: str, only: str | None = None) -> str:
+    """Open the stream in VLC, else Just Player; ``only`` = the player that worked before."""
     eid = entity["entity_id"]
     if entity["state"] in ("off", "standby"):
         _service(client, settings, "media_player", "turn_on", {"entity_id": eid})
+        entity["state"] = "on"  # a spare stream needs no second wake-up
     for name, package in PLAYERS:
+        if only and f"adb:{name}" != only:
+            continue
         _service(client, settings, "androidtv", "adb_command",
                  {"entity_id": eid, "command": intent(url, package)})  # fmt: skip
         answer = str((_state(client, settings, eid).get("attributes") or {})
@@ -213,14 +228,70 @@ def _adb(client, settings, entity: dict, url: str) -> str:
     raise HaError("tv_no_player", "neither VLC nor Just Player is installed on the TV")
 
 
-def launch(
-    settings: Settings, tv_id: str | None, url: str, *,
+def _start(client, settings, entity: dict, url: str, only: str | None = None) -> str:
+    """Hand one stream to one entity; returns the way (adb:vlc, cast, airplay, media)."""
+    if entity["method"] == "adb":
+        return _adb(client, settings, entity, url, only)
+    _service(client, settings, "media_player", "play_media", {
+        "entity_id": entity["entity_id"], "media_content_id": url,
+        "media_content_type": "video" if entity["method"] == "airplay" else mime(url),
+    })  # fmt: skip
+    return entity["method"]
+
+
+def is_ours(state: dict, url: str, way: str, fresh: bool) -> bool:
+    """Does this HA state say our stream plays? ``fresh``: the entity was seen not
+    playing since the stream was sent, so ``playing`` now is the new stream."""
+    if state.get("state") != "playing":
+        return False
+    attrs = state.get("attributes") or {}
+    content = attrs.get("media_content_id")
+    if content == url:
+        return True
+    if way.startswith("adb:"):
+        package = dict(PLAYERS).get(way.removeprefix("adb:"))
+        app = attrs.get("app_id")
+        if app and app != package:
+            return False
+    elif content and way == "cast":
+        return False  # Cast still shows the stream that played before
+    return fresh
+
+
+def _wait(client, settings, entity_id: str, url: str, way: str, before: dict,
+          wait_s: float) -> bool:  # fmt: skip
+    """Wait until the entity plays this stream; False when the time is up."""
+    fresh = before.get("state") != "playing"
+    deadline = _clock() + wait_s
+    while True:
+        state = _state(client, settings, entity_id)
+        if is_ours(state, url, way, fresh):
+            return True
+        if state.get("state") != "playing":
+            fresh = True
+        if _clock() >= deadline:
+            return False
+        _sleep(POLL_S)
+
+
+@dataclass
+class Launch:
+    way: str  # adb:vlc, adb:just, cast, airplay, media
+    index: int  # which of the URLs plays (or was tried last, when not confirmed)
+    confirmed: bool  # HA said it plays; False = accepted, but no picture was seen
+
+
+def play(
+    settings: Settings, tv_id: str | None, urls: list[str], *,
     transport: httpx.BaseTransport | None = None,
-) -> str:  # fmt: skip
-    """Start the stream on the TV; returns how (adb:vlc, cast, airplay, media).
-    Raises HaError with the reason of the last way tried."""
+) -> Launch:  # fmt: skip
+    """Start the first stream on the TV and wait for the picture; a stream that does not
+    play in ``settings.tv_wait_s`` gives way to the next one on the same way. Raises
+    HaError with the reason of the last way tried when no way accepted the first stream."""
     if not settings.ha_ready:
         raise HaError("ha_not_configured", "Home Assistant is not set up")
+    if not urls:
+        raise HaError("tv_failed", "no stream to start")
     with _client(settings, transport) as client:
         tv = find(group(_rows(client, settings)), tv_id)
         last: HaError | None = None
@@ -228,18 +299,30 @@ def launch(
             if entity["state"] in ("unavailable",):
                 last = last or HaError("tv_unavailable", "the TV is unavailable in HA")
                 continue
+            eid = entity["entity_id"]
+            before = _state(client, settings, eid)
             try:
-                if entity["method"] == "adb":
-                    return _adb(client, settings, entity, url)
-                _service(client, settings, "media_player", "play_media", {
-                    "entity_id": entity["entity_id"], "media_content_id": url,
-                    "media_content_type": "video" if entity["method"] == "airplay" else mime(url),
-                })  # fmt: skip
-                return entity["method"]
+                way = _start(client, settings, entity, urls[0])
             except HaError as exc:
                 if exc.code in ("ha_unauthorized", "ha_unreachable", "ha_timeout"):
                     raise
                 last = exc
+                continue
+            # This way works: the spares go the same way.
+            tried = 0
+            for i, url in enumerate(urls):
+                if i:
+                    before = _state(client, settings, eid)
+                    try:
+                        _start(client, settings, entity, url, way)
+                    except HaError as exc:
+                        if exc.code in ("ha_unauthorized", "ha_unreachable", "ha_timeout"):
+                            raise
+                        continue
+                tried = i
+                if _wait(client, settings, eid, url, way, before, settings.tv_wait_s):
+                    return Launch(way, i, True)
+            return Launch(way, tried, False)
         raise last or HaError("tv_failed", "no way to start the stream on this TV")
 
 

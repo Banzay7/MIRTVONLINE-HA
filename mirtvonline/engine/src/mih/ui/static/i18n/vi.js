@@ -491,7 +491,6 @@
   "Home Assistant не принял ключ дополнения. Перезапустите дополнение.": "Home Assistant không chấp nhận khóa của add-on. Hãy khởi động lại add-on.",
   "В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ».": "Home Assistant không có script của bạn: hãy tạo mẫu trong “Script và lệnh giọng nói” hoặc chọn “Thẳng lên TV”.",
   "напрямую на ТВ": "thẳng lên TV",
-  "Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.": "Với “Thẳng lên TV”, hiện chỉ đo thời gian Home Assistant nhận lệnh chứ chưa đo đến lúc có hình, nên hầu hết kênh đều trông nhanh.",
   "Не выбран телевизор: выберите его в Настройках (Телевизор).": "Chưa chọn TV: hãy chọn trong Cài đặt (TV).",
   "Найдено поисковиком": "Do bộ tìm kiếm tìm thấy",
   "Найдено поисковиком ({0} плейл.)": "Do bộ tìm kiếm tìm thấy ({0} danh sách)",

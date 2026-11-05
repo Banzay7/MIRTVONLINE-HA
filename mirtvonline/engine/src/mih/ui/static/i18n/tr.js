@@ -484,7 +484,6 @@
   "Home Assistant не принял ключ дополнения. Перезапустите дополнение.": "Home Assistant eklentinin anahtarını kabul etmedi. Eklentiyi yeniden başlatın.",
   "В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ».": "Home Assistant’ta betiğiniz yok: şablonu “Betikler ve sesli komutlar” altında oluşturun ya da “Doğrudan TV’ye”yi seçin.",
   "напрямую на ТВ": "doğrudan TV’ye",
-  "Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.": "“Doğrudan TV’ye”de şimdilik yalnızca Home Assistant’ın komutu kabul etme süresi ölçülüyor, görüntü gelene kadar değil; bu yüzden neredeyse her kanal hızlı görünür.",
   "Не выбран телевизор: выберите его в Настройках (Телевизор).": "TV seçilmedi: Ayarlar’dan seçin (Televizyon).",
   "Найдено поисковиком": "Keşifçinin bulduğu",
   "Найдено поисковиком ({0} плейл.)": "Keşifçinin bulduğu ({0} liste)",
