@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.7
+
+- The **Configuration** tab tells what each option really does. `language` is now
+  called "Notification and script language" (the site's own language is picked in the
+  browser); the home country no longer promises a setup wizard; the profiles name their
+  stream limits; channel languages explain the format and the order at the limit.
+
 ## 0.1.6
 
 - Your channels first at the stream limit. The profile caps found streams (S 6,000,
