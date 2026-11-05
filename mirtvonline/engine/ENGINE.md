@@ -21,3 +21,8 @@
   (`androidtv.adb_command`, VIEW intent to VLC, then Just Player), Google Cast, AirPlay,
   then any player with `play_media`. `GET /api/v1/tv`, `PUT /api/v1/settings/tv` (the
   default TV, in `app_settings`), `tv` in `POST /api/v1/playback/commands`.
+- Help for the add-on (`ui/static/help`): written for Home Assistant (sidebar, light mode,
+  launch on a TV, the access token explained); only ru, en and vi are kept, the other
+  interface languages read the English guide. `GET /api/v1/health/live` tells the web UI
+  how the browser got in (`access`: ha, token or open), and Settings shows the token
+  field only when the server asks for one.

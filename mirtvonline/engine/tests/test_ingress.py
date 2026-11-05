@@ -62,3 +62,14 @@ def test_settings_read_and_check_the_variable():
             Settings.from_env(
                 {"MIH_API_TOKEN": TOKEN, "MIH_INGRESS_PROXY": bad}
             ).validate_for_serving()
+
+
+def test_live_says_how_the_browser_got_in(tmp_path):
+    """Settings explains the token by this: no token through the HA panel."""
+    with _client(tmp_path, PROXY) as c:
+        assert c.get("/api/v1/health/live").json()["access"] == "ha"
+    with _client(tmp_path, "172.30.32.5") as c:
+        assert c.get("/api/v1/health/live").json()["access"] == "token"
+    app = create_app(Settings(data_dir=tmp_path / "open"))
+    with TestClient(app, client=("172.30.32.5", 50000)) as c:
+        assert c.get("/api/v1/health/live").json()["access"] == "open"

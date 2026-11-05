@@ -1051,7 +1051,29 @@ function adultChanged(text) {
   return route();
 }
 
+// The token field only where the server asks for one. Through the HA sidebar panel HA has
+// already checked the user, and a server without MIH_API_TOKEN checks nothing: any text
+// typed there would "fit", so the field is replaced by what the guide says about it.
+function tokenSettings(access, hasToken) {
+  const note = helpText?.access?.[access || "token"];
+  const more = note && helpText.more ? html` <a href="#/help?s=access">${helpText.more}</a>` : "";
+  if (access === "ha" || access === "open") {
+    return html`<div class="field"><span>${t("Токен доступа к API")}</span>
+      <span class="small muted">${note}${more}</span>
+      ${hasToken ? html`<div class="row"><button class="btn" type="button" id="token-clear">${t("Забыть токен")}</button></div>` : ""}</div>`;
+  }
+  return html`<form id="token-form" class="field">
+      <label for="token">${t("Токен доступа к API")}</label>
+      <input id="token" name="token" type="password" autocomplete="off"
+        placeholder="${hasToken ? t("сохранён в этом браузере") : "MIH_API_TOKEN"}">
+      <div class="row"><button class="btn tv" type="submit">${t("Сохранить")}</button>
+        ${hasToken ? html`<button class="btn" type="button" id="token-clear">${t("Забыть токен")}</button>` : ""}</div>
+      <span class="small muted">${note || t("Хранится только в этом браузере. Без токена каталог открывается лишь на том же компьютере, где запущен сервер.")}${more}</span>
+    </form>`;
+}
+
 async function viewSettings() {
+  await loadHelp();
   let health = null, metrics = null, err = null;
   try { health = await api("/health/live"); } catch (e) { err = e; }
   try { metrics = await api("/metrics/summary"); } catch (e) { err = err || e; }
@@ -1071,14 +1093,7 @@ async function viewSettings() {
       <select id="pref-lang">${Object.entries(LANGS_UI).map(([code, name], i) => html`${i === LANGS_MAIN.length ? raw('<option disabled>──────────</option>') : ""}<option value="${code}" lang="${code}" ${code === LANG ? raw("selected") : ""}>${name}</option>`)}</select>
       <span class="small muted">${t("Слова времени и языка («сегодня», «вечером», «на русском») поиск понимает по-русски и по-английски; названия ищутся на любом языке.")}</span>
     </div>
-    <form id="token-form" class="field">
-      <label for="token">${t("Токен доступа к API")}</label>
-      <input id="token" name="token" type="password" autocomplete="off"
-        placeholder="${hasToken ? t("сохранён в этом браузере") : "MIH_API_TOKEN"}">
-      <div class="row"><button class="btn tv" type="submit">${t("Сохранить")}</button>
-        ${hasToken ? html`<button class="btn" type="button" id="token-clear">${t("Забыть токен")}</button>` : ""}</div>
-      <span class="small muted">${t("Хранится только в этом браузере. Без токена каталог открывается лишь на том же компьютере, где запущен сервер.")}</span>
-    </form>
+    ${tokenSettings(health?.access, hasToken)}
     ${adult ? adultSettings(adult) : ""}
     <h2>${t("Выдача")}</h2>
     <div class="field">
