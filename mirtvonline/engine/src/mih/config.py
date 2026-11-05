@@ -133,6 +133,10 @@ class Settings:
     # Country the TVs are in (two letters, e.g. "de"): its channels that a geo block hides
     # from this server are still imported by the packer, for a TV at home to confirm.
     home_country: str | None = None
+    # Languages of your channels (ISO 639-1, e.g. ("ru", "en")). With the home country they
+    # decide which found streams stay first when the stream limit is reached
+    # (mih.discovery.prefer).
+    channel_languages: tuple[str, ...] = ()
     # Google Drive upload of channels.json/csv (docs/drive.md): the JSON token that
     # rclone authorize "drive" prints, the target folder's ID and how often the upload
     # runs (only when the channels changed). No token = no upload.
@@ -254,6 +258,7 @@ class Settings:
                 Path(env["MIH_DISCOVERY_FILE"]) if env.get("MIH_DISCOVERY_FILE") else None
             ),
             home_country=(env.get("MIH_HOME_COUNTRY") or "").strip().lower()[:2] or None,
+            channel_languages=_languages(env.get("MIH_CHANNEL_LANGUAGES", "")),
             drive_token=env.get("MIH_DRIVE_TOKEN") or None,
             drive_folder_id=env.get("MIH_DRIVE_FOLDER_ID") or None,
             every_drive=parse_every(env.get("MIH_EVERY_DRIVE", "6h"), "MIH_EVERY_DRIVE"),
@@ -394,3 +399,15 @@ def _is_loopback(host: str) -> bool:
         return ipaddress.ip_address(host).is_loopback
     except ValueError:
         return False
+
+
+def _languages(value: str) -> tuple[str, ...]:
+    """"ru, en" or "Russian;English" -> ("ru", "en")."""
+    from mih.lists import normalize_lang  # mih.lists imports this module
+
+    out: list[str] = []
+    for part in value.replace(";", ",").replace(" ", ",").split(","):
+        code = normalize_lang(part) if part.strip() else ""
+        if code and code not in out:
+            out.append(code)
+    return tuple(out)

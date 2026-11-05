@@ -16,6 +16,9 @@ channels (geo block), though they play at home. A stream of that country (by its
 e.g. "ZDF.de") whose probe failed the way a geo block fails (HTTP 403/451, no answer,
 or a [Geo-blocked] label) is imported anyway, marked blocked_by_geo, and waits for a TV
 at home to confirm it.
+
+Stream limit (MIH_DISCOVERY_MAX_STREAMS): what happens near and at it is in
+mih.discovery.prefer: the home country, the chosen languages and favourites come first.
 """
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ from urllib.parse import unquote, urlsplit
 import httpx
 
 from mih.config import Settings
+from mih.discovery import prefer
 from mih.discovery.harvest import Plan
 from mih.discovery.safety import drm_urls, screen, url_problem
 from mih.health.policy import HealthPolicy, Observation, format_ts
@@ -91,6 +95,8 @@ class PackReport:
     channels_created: int = 0
     streams_created: int = 0
     capped: bool = False
+    # Found streams of other channels removed to make room for yours.
+    evicted: int = 0
     offline: bool = False
 
     def stats(self) -> dict:
@@ -130,20 +136,25 @@ def scout(
     ).fetchall()
     if not rows:
         return report
+    # At the stream limit only your channels are worth sampling (mih.discovery.prefer).
+    pref = prefer.load(conn, settings)
+    if not (pref.active and auto_streams(conn) >= settings.discovery_max_streams):
+        pref = None
     with _client(policy, transport) as client:
         if not vantage_online(client, policy):
             report.offline = True
             return report
         for row in rows:
             status = _scout_one(conn, settings, plan, policy, client, row, now, report,
-                                transport)  # fmt: skip
+                                transport, pref)  # fmt: skip
             report.scouted += 1
             report.by_status[status] = report.by_status.get(status, 0) + 1
     return report
 
 
 def _scout_one(conn, settings, plan: Plan, policy, client, row, now: datetime,
-               report: ScoutReport, transport) -> str:  # fmt: skip
+               report: ScoutReport, transport, pref: prefer.Preference | None = None
+               ) -> str:  # fmt: skip
     if row["status"] == "packed" and row["source_id"] and _source_gone(conn, row["source_id"]):
         conn.execute("UPDATE sources SET enabled = 0 WHERE id = ?", (row["source_id"],))
         return _set(conn, row, "retired", "no_live_streams", next_at=None)
@@ -182,6 +193,8 @@ def _scout_one(conn, settings, plan: Plan, policy, client, row, now: datetime,
     fresh = _new_entries(conn, kept)
     conn.execute("UPDATE discovered_playlists SET entries = ?, new_entries = ? WHERE id = ?",
                  (len(parsed.entries), len(fresh), row["id"]))  # fmt: skip
+    if pref is not None:
+        fresh = [e for e, w in zip(fresh, prefer.wanted(conn, pref, fresh), strict=True) if w]
     if not fresh:
         status = "packed" if row["status"] == "packed" else "known"
         return _set(conn, row, status, None, next_at=now + RESCOUT)
@@ -255,7 +268,10 @@ def pack(
     transport: httpx.BaseTransport | None = None,
 ) -> PackReport:
     report = PackReport()
-    if auto_streams(conn) >= settings.discovery_max_streams:
+    pref = prefer.load(conn, settings)
+    total = auto_streams(conn)
+    capped = total >= settings.discovery_max_streams
+    if capped and not pref.active:
         report.capped = True
         return report
     row = conn.execute(
@@ -278,9 +294,21 @@ def pack(
     unique = _unique(kept)
     elsewhere = _in_catalog(conn, [url_hash(e.url) for e in unique]) - own
     candidates = [e for e in unique if url_hash(e.url) not in elsewhere]
+    mine = {url_hash(e.url) for e, w in zip(candidates, prefer.wanted(conn, pref, candidates),
+                                            strict=True) if w}  # fmt: skip
+    if capped:
+        # At the limit only your channels go on; the rest of the playlist waits.
+        candidates = [e for e in candidates if url_hash(e.url) in own | mine]
+        if not mine - own:
+            report.capped = True
+            _content_path(settings, row["id"]).unlink(missing_ok=True)
+            _set(conn, row, "packed" if row["source_id"] else "known", "capped",
+                 next_at=now + RESCOUT)  # fmt: skip
+            return report
     known = _known_results(conn, [url_hash(e.url) for e in candidates], now)
     to_check = [e for e in candidates if url_hash(e.url) not in own
                 and url_hash(e.url) not in known]  # fmt: skip
+    to_check.sort(key=lambda e: url_hash(e.url) not in mine)  # yours first
     batch = to_check[: settings.discovery_pack_batch]
     results: dict[str, ProbeResult] = {}
     if batch:
@@ -303,6 +331,18 @@ def pack(
     keep = [e for e in candidates
             if url_hash(e.url) in own or known.get(url_hash(e.url)) in (1, HOME)]  # fmt: skip
     fresh = [e for e in keep if url_hash(e.url) not in own]
+    full = False
+    if capped and fresh:
+        room = settings.discovery_max_streams - total
+        if len(fresh) > room:
+            report.evicted = prefer.make_room(conn, pref, len(fresh) - room)
+            room += report.evicted
+        if len(fresh) > room:
+            # No more room even for yours: what is left of the playlist waits.
+            full = True
+            dropped = {url_hash(e.url) for e in fresh[max(room, 0):]}
+            fresh = [e for e in fresh if url_hash(e.url) not in dropped]
+            keep = [e for e in keep if url_hash(e.url) not in dropped]
     report.home_only = sum(1 for e in fresh if known.get(url_hash(e.url)) == HOME)
     report.streams_ok = len(keep) - report.home_only
     if fresh:
@@ -317,10 +357,14 @@ def pack(
             (source_id, format_ts(now), len(keep), row["id"]),
         )
         report.packed = True
-    if report.remaining:
+    if report.remaining and not full:
         return report
 
     _content_path(settings, row["id"]).unlink(missing_ok=True)
+    if full:
+        report.capped = True
+        _set(conn, row, "packed" if keep else "known", "capped", next_at=now + RESCOUT)
+        return report
     if not keep:
         _miss(conn, row, now, "no_live")
         return report

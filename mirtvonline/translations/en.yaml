@@ -13,6 +13,11 @@ configuration:
     description: >-
       Two letters, e.g. de. Channels of this country are kept even if they look
       blocked from here. Empty: the setup wizard asks.
+  channel_languages:
+    name: Channel languages
+    description: >-
+      E.g. ru, en. Channels in these languages and of the home country come first
+      when the profile's stream limit is reached. Empty: the add-on's language.
   timezone:
     name: Time zone
     description: For the TV guide, e.g. Europe/Berlin. Empty uses the time zone of Home Assistant.

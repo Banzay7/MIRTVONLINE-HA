@@ -32,16 +32,19 @@ def test_defaults_are_profile_s_and_russian(tmp_path):
     assert "MIH_HA_URL" not in env
     assert env["MIH_PLAYBACK"] == "off"
     assert "MIH_HOME_COUNTRY" not in env
+    # Your channels' language defaults to the add-on's language.
+    assert env["MIH_CHANNEL_LANGUAGES"] == "ru"
 
 
 def test_options_are_mapped(tmp_path):
-    options = {"language": "en", "profile": "M", "home_country": "DE",
+    options = {"language": "ru", "profile": "M", "home_country": "DE", "channel_languages": " en ",
                "timezone": "Europe/Berlin", "github_token": "ghp_x"}
     env = mirtv_env.build_env(options, {"SUPERVISOR_TOKEN": "sup"}, tmp_path)
-    assert env["MIH_LANG"] == "en"
+    assert env["MIH_LANG"] == "ru"
     assert env["MIRTV_PROFILE"] == "M"
     assert env["MIH_DISCOVERY_MAX_STREAMS"] == "15000"
     assert env["MIH_HOME_COUNTRY"] == "de"
+    assert env["MIH_CHANNEL_LANGUAGES"] == "en"
     assert env["MIH_TIMEZONE"] == "Europe/Berlin"
     assert env["MIH_GITHUB_TOKEN"] == "ghp_x"
     assert env["MIH_HA_URL"] == "http://supervisor/core"
