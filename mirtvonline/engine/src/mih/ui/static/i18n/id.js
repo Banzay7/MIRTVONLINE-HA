@@ -484,7 +484,6 @@
   "Home Assistant не принял ключ дополнения. Перезапустите дополнение.": "Home Assistant tidak menerima kunci add-on. Mulai ulang add-on.",
   "В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ».": "Home Assistant tidak punya skrip Anda: buat templat di “Skrip dan perintah suara” atau pilih “Langsung ke TV”.",
   "напрямую на ТВ": "langsung ke TV",
-  "Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.": "Untuk “Langsung ke TV”, saat ini hanya diukur waktu Home Assistant menerima perintah, bukan sampai gambar muncul, sehingga hampir semua saluran tampak cepat.",
   "Не выбран телевизор: выберите его в Настройках (Телевизор).": "Belum ada TV yang dipilih: pilih di Pengaturan (Televisi).",
   "Найдено поисковиком": "Ditemukan oleh pencari",
   "Найдено поисковиком ({0} плейл.)": "Ditemukan oleh pencari ({0} playlist)",

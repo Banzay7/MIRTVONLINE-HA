@@ -491,7 +491,6 @@
   "Home Assistant не принял ключ дополнения. Перезапустите дополнение.": "Home Assistant did not accept the add-on’s key. Restart the add-on.",
   "В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ».": "Home Assistant has no script of yours: create the template under “Scripts and voice commands” or pick “Straight to the TV”.",
   "напрямую на ТВ": "straight to the TV",
-  "Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.": "For “Straight to the TV” only the time Home Assistant takes to accept the command is measured for now, not until the picture appears, so almost every channel looks fast.",
   "Не выбран телевизор: выберите его в Настройках (Телевизор).": "No TV chosen: pick one in Settings (TV).",
   "Найдено поисковиком": "Found by the scout",
   "Найдено поисковиком ({0} плейл.)": "Found by the scout ({0} playlists)",

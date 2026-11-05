@@ -484,7 +484,6 @@
   "Home Assistant не принял ключ дополнения. Перезапустите дополнение.": "Home Assistant no aceptó la clave del complemento. Reinicia el complemento.",
   "В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ».": "Home Assistant no tiene tu script: crea la plantilla en «Scripts y comandos de voz» o elige «Directo a la TV».",
   "напрямую на ТВ": "directo a la TV",
-  "Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.": "Con «Directo a la TV», por ahora solo se mide el tiempo que tarda Home Assistant en aceptar la orden, no hasta que aparece la imagen, así que casi todos los canales parecen rápidos.",
   "Не выбран телевизор: выберите его в Настройках (Телевизор).": "No hay TV elegida: elíjala en Ajustes (Televisor).",
   "Найдено поисковиком": "Encontrado por el explorador",
   "Найдено поисковиком ({0} плейл.)": "Encontrado por el explorador ({0} listas)",

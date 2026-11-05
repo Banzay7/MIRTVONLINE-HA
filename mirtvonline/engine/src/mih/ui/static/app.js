@@ -1189,8 +1189,7 @@ async function viewSettings() {
       <div class="row"><input id="open-slow" name="slow_s" type="number" inputmode="decimal" step="0.5"
         min="${speed.min_s}" max="${speed.max_s}" value="${speed.slow_s}" style="max-width: 7em">
         <button class="btn tv" type="submit">${t("Сохранить")}</button></div>
-      <span class="small muted">${t("Канал, который обычно открывается на ТВ дольше порога, считается плохим для просмотра и уходит в конец списков. По умолчанию {0}. Время замеряется при каждом запуске кнопкой «На ТВ».", secs(speed.default_s * 1000))}
-        ${adapters?.available.includes("tv") ? t("Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.") : ""}</span>
+      <span class="small muted">${t("Канал, который обычно открывается на ТВ дольше порога, считается плохим для просмотра и уходит в конец списков. По умолчанию {0}. Время замеряется при каждом запуске кнопкой «На ТВ».", secs(speed.default_s * 1000))}</span>
     </form>` : ""}
     <h2>${t("Качество при запуске")}</h2>
     <div class="field">

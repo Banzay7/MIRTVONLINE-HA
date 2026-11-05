@@ -1,6 +1,7 @@
 """Launch on a TV through Home Assistant's media players (mih.tv), without a script."""
 
 import json
+import shlex
 
 import httpx
 import pytest
@@ -52,12 +53,24 @@ def test_intent_quotes_the_url_for_the_shell():
 
 
 class FakeHa:
-    """Home Assistant's REST API: the template, services and states."""
+    """Home Assistant's REST API: the template, services and states. A stream sent to a
+    TV plays at once unless its address has one of ``dead`` in it (it keeps buffering);
+    ``silent`` TVs never report ``playing``."""
 
-    def __init__(self, rows=ROWS, adb_answers=("Starting: Intent",), fail=()):
+    def __init__(self, rows=ROWS, adb_answers=("Starting: Intent",), fail=(), dead=(),
+                 silent=False, state="idle"):  # fmt: skip
         self.rows, self.adb_answers, self.fail = rows, list(adb_answers), set(fail)
+        self.dead, self.silent = tuple(dead), silent
         self.calls: list[tuple[str, dict]] = []
         self.adb_response = ""
+        self.state, self.content, self.app = state, None, None
+
+    def _send(self, url, app=None):
+        self.content, self.app = url, app
+        if self.silent:
+            self.state, self.content = "on", None
+        else:
+            self.state = "buffering" if any(d in url for d in self.dead) else "playing"
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path.removeprefix("/core")
@@ -71,10 +84,26 @@ class FakeHa:
                 return httpx.Response(500, json={"message": "Failed to cast http://x.example"})
             if service == "androidtv.adb_command":
                 self.adb_response = self.adb_answers.pop(0) if self.adb_answers else ""
+                if "error" not in self.adb_response.lower():
+                    args = shlex.split(body["command"])
+                    self._send(args[args.index("-d") + 1], args[-1])
+            if service == "media_player.play_media":
+                self._send(body["media_content_id"])
             return httpx.Response(200, json=[])
         if path.startswith("/api/states/"):
-            return httpx.Response(200, json={"attributes": {"adb_response": self.adb_response}})
+            return httpx.Response(200, json={"state": self.state, "attributes": {
+                "adb_response": self.adb_response, "media_content_id": self.content,
+                "app_id": self.app}})  # fmt: skip
         return httpx.Response(404)
+
+
+@pytest.fixture(autouse=True)
+def no_real_wait(monkeypatch):
+    """Waiting for the picture runs on a clock that sleeping moves forward."""
+    clock = [0.0]
+    monkeypatch.setattr(tv, "_clock", lambda: clock[0])
+    monkeypatch.setattr(tv, "_sleep", lambda s: clock.__setitem__(0, clock[0] + s))
+    return clock
 
 
 def _client(tmp_path, fake, **kw):
@@ -217,3 +246,89 @@ def test_addon_without_mcp_offers_no_agent(tmp_path):
     c = _client(tmp_path / "mcp", FakeHa(), ha_addon="abc123_mirtvonline", mcp_port=8766)
     assert c.get("/api/v1/playback/adapters").json()["available"] == ["agent", "ha", "tv"]
     c.__exit__(None, None, None)
+
+
+def _opens(c):
+    conn = db.connect(c.app.state.settings.db_path)
+    rows = conn.execute("SELECT stream_id, source, outcome, open_ms FROM open_times").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def test_open_time_runs_until_the_tv_plays(tmp_path):
+    """The open time ends when HA says the stream plays, not when it accepted the call."""
+
+    class Slow(FakeHa):
+        polls = 0
+
+        def __call__(self, request):
+            resp = super().__call__(request)
+            if request.url.path.endswith("/api/states/media_player.living_room_cast"):
+                self.polls += 1
+                if self.content and self.polls < 6:  # 2 s of buffering first
+                    body = resp.json() | {"state": "buffering"}
+                    return httpx.Response(200, json=body)
+            return resp
+
+    c = _client(tmp_path, Slow(rows=[ROWS[0]]))
+    cmd = _play(c).json()
+    assert (cmd["state"], cmd["detail"]) == ("started", "cast")
+    assert "playing" in cmd["stages"]
+    [row] = _opens(c)
+    assert (row["source"], row["outcome"]) == ("tv", "opened")
+    assert row["stream_id"] == cmd["stream_id"]
+    c.__exit__(None, None, None)
+
+
+def test_a_stream_that_does_not_play_gives_way_to_the_next(tmp_path, no_real_wait):
+    fake = FakeHa(rows=[ROWS[0]], dead=["/1tv/"])
+    c = _client(tmp_path, fake)
+    cmd = _play(c).json()
+    assert (cmd["state"], cmd["detail"]) == ("started", "cast")
+    sent = [b["media_content_id"] for s, b in fake.calls if s == "media_player.play_media"]
+    assert len(sent) == 2 and "/1tv/" in sent[0] and "/1tv_plus2/" in sent[1]
+    assert no_real_wait[0] >= 15  # the first one had its 15 s
+    conn = db.connect(c.app.state.settings.db_path)
+    row = conn.execute("SELECT stream_id, offered, failed FROM playback_commands").fetchone()
+    conn.close()
+    offered = json.loads(row["offered"])
+    assert row["stream_id"] == offered[1] and json.loads(row["failed"]) == [offered[0]]
+    assert [r["outcome"] for r in _opens(c)] == ["opened"]
+    c.__exit__(None, None, None)
+
+
+def test_a_tv_that_never_says_it_plays_is_started_unconfirmed(tmp_path):
+    fake = FakeHa(rows=[ROWS[0]], silent=True)
+    c = _client(tmp_path, fake)
+    cmd = _play(c).json()
+    assert (cmd["state"], cmd["detail"]) == ("started", "unconfirmed")
+    assert sum(s == "media_player.play_media" for s, _ in fake.calls) == 2
+    assert [r["outcome"] for r in _opens(c)] == ["slow"]
+    c.__exit__(None, None, None)
+
+
+def test_adb_spare_goes_to_the_same_player(tmp_path):
+    fake = FakeHa(
+        dead=["/1tv/"],
+        adb_answers=["Error: unable to resolve Intent", "Starting: Intent", "Starting: Intent"],
+    )
+    c = _client(tmp_path, fake)
+    cmd = _play(c, tv="media_player.living_room_adb").json()
+    assert (cmd["state"], cmd["detail"]) == ("started", "adb:just")
+    adb = [b["command"] for s, b in fake.calls if s == "androidtv.adb_command"]
+    assert len(adb) == 3 and "/1tv_plus2/" in adb[2] and "com.brouken.player" in adb[2]
+    assert [s for s, _ in fake.calls].count("media_player.turn_on") == 1
+    c.__exit__(None, None, None)
+
+
+@pytest.mark.parametrize(("state", "way", "fresh", "ours"), [
+    ({"state": "playing", "attributes": {"media_content_id": "u"}}, "cast", False, True),
+    ({"state": "playing", "attributes": {"media_content_id": "old"}}, "cast", True, False),
+    ({"state": "buffering", "attributes": {"media_content_id": "u"}}, "cast", True, False),
+    ({"state": "playing", "attributes": {}}, "airplay", True, True),
+    ({"state": "playing", "attributes": {}}, "airplay", False, False),
+    ({"state": "playing", "attributes": {"app_id": "org.videolan.vlc"}}, "adb:vlc", True, True),
+    ({"state": "playing", "attributes": {"app_id": "com.netflix"}}, "adb:vlc", True, False),
+])  # fmt: skip
+def test_which_playing_is_our_stream(state, way, fresh, ours):
+    assert tv.is_ours(state, "u", way, fresh) is ours

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.11
+
+- **On TV** ("Straight to the TV") waits until Home Assistant says the TV is showing
+  the stream. The channel's open speed is now the real time until the picture, not the
+  time Home Assistant took to accept the command, so the note about it is gone.
+- A stream that does not play within 15 seconds gives way to the channel's next stream
+  on the same way (Cast, ADB player, AirPlay), up to three in all. A TV that never says
+  it plays shows "loading longer than usual" and the opening counts as slow.
+
 ## 0.1.10
 
 - Language texts tell the truth: events and job summaries on the site follow the
