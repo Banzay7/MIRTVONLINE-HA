@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.5
+
+- Channels start from Home Assistant itself. The site's **Settings** → **Scripts and
+  voice commands** → **Create in Home Assistant** adds, if missing:
+  `script.mirtv_channel` (turn a channel on by its name; Assist, automations,
+  dashboards and an outside agent through HA's MCP Server call it), the automation
+  `automation.mirtvonline_voice` (Assist phrases "play channel …") and the template
+  `script.mih_play` for the "own HA script" way. Existing ones are never overwritten.
+- A channel asked from Home Assistant that did not start shows up as a Home Assistant
+  notification.
+- The help on the site was reworked (sign-in, token, light mode, launch on a TV).
+
 ## 0.1.4
 
 - **On TV** starts the channel on a TV of Home Assistant itself, no script needed: ADB

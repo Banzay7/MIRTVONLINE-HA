@@ -17,6 +17,7 @@ def test_ingress_without_published_ports():
     assert CONFIG["ingress_port"] == 8765
     assert "ports" not in CONFIG
     assert CONFIG["homeassistant_api"] is True
+    assert CONFIG["stdin"] is True  # script.mirtv_channel -> hassio.addon_stdin
     assert set(CONFIG["arch"]) == {"aarch64", "amd64"}
     assert "image" not in CONFIG  # built locally from this repository
 

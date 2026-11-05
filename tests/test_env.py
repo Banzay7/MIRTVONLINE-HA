@@ -83,3 +83,10 @@ def test_script_prints_shell_exports(tmp_path):
     assert shown == "it's; rm -rf /"
     assert all(line.startswith("export ") for line in out.splitlines())
     assert shlex.split(out)  # parses as shell words
+
+
+def test_addon_slug_comes_from_the_container_name(tmp_path):
+    env = mirtv_env.build_env({}, {"SUPERVISOR_TOKEN": "s", "HOSTNAME": "abc123-mirtvonline"},
+                              tmp_path)
+    assert env["MIH_HA_ADDON"] == "abc123_mirtvonline"
+    assert "MIH_HA_ADDON" not in mirtv_env.build_env({}, {}, tmp_path)

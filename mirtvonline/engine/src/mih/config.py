@@ -172,6 +172,9 @@ class Settings:
     # The TV's Home Assistant Companion notify action (notify.mobile_app_<device>): the
     # check verifies it is registered and the script gets it as ``notify_service``.
     ha_notify: str | None = None
+    # The add-on's own slug (set by the add-on): HA scripts reach it with
+    # hassio.addon_stdin, and Settings may create them (mih.ha_setup).
+    ha_addon: str | None = None
 
     @property
     def ha_ready(self) -> bool:
@@ -264,6 +267,7 @@ class Settings:
             ha_url=(env.get("MIH_HA_URL") or "").strip().rstrip("/") or None,
             ha_token=env.get("MIH_HA_TOKEN") or None,
             ha_script=env.get("MIH_HA_SCRIPT") or "mih_play",
+            ha_addon=(env.get("MIH_HA_ADDON") or "").strip() or None,
             ha_streams=max(1, int(env.get("MIH_HA_STREAMS", "3"))),
             play_quality=_choice(
                 env.get("MIH_PLAY_QUALITY", "720").strip().lower(),

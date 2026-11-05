@@ -488,5 +488,12 @@
   "«На ТВ» теперь идёт на ТВ через Home Assistant": "“Lên TV” giờ đi thẳng tới TV qua Home Assistant",
   "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Trước tiên là lệnh ADB tới VLC hoặc Just Player, sau đó Google Cast, rồi AirPlay. TV mặc định lưu trên máy chủ và áp dụng cho mọi người; lựa chọn trong trình duyệt này sẽ thay thế nó.",
   "Загружаю список ТВ…": "Đang tải danh sách TV…",
-  "ТВ по умолчанию сохранён": "Đã lưu TV mặc định"
+  "ТВ по умолчанию сохранён": "Đã lưu TV mặc định",
+  "Доступно только в дополнении Home Assistant.": "Chỉ có trong add-on Home Assistant.",
+  "Home Assistant не дал создать скрипт или автоматизацию. Подробности в журнале HA.": "Home Assistant không cho tạo script hoặc tự động hóa. Chi tiết trong nhật ký HA.",
+  "Создать в Home Assistant": "Tạo trong Home Assistant",
+  "Скрипт {0} включает канал по названию: его вызывают Assist, автоматизации, панели и внешний агент через MCP Server в HA. Автоматизация {1} — фразы для Assist «включи канал …». Скрипт {2} — шаблон для способа «Через свой скрипт HA». Существующие не перезаписываются.": "Script {0} bật kênh theo tên: Assist, tự động hóa, bảng điều khiển và agent bên ngoài (qua MCP Server của HA) gọi nó. Tự động hóa {1} chứa các câu lệnh Assist \"bật kênh …\". Script {2} là mẫu cho cách \"script HA riêng\". Những cái đã có sẽ không bị ghi đè.",
+  "Скрипты и голосовые команды": "Script và lệnh giọng nói",
+  "Создано в Home Assistant: {0}": "Đã tạo trong Home Assistant: {0}",
+  "Всё уже есть в Home Assistant": "Home Assistant đã có đủ mọi thứ"
 };

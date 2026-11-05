@@ -481,5 +481,12 @@
   "«На ТВ» теперь идёт на ТВ через Home Assistant": "“Di TV” sekarang menuju TV lewat Home Assistant",
   "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Pertama perintah ADB ke VLC atau Just Player, lalu Google Cast, lalu AirPlay. TV bawaan disimpan di server dan berlaku untuk semua; pilihan di browser ini menggantikannya.",
   "Загружаю список ТВ…": "Memuat daftar TV…",
-  "ТВ по умолчанию сохранён": "TV bawaan disimpan"
+  "ТВ по умолчанию сохранён": "TV bawaan disimpan",
+  "Доступно только в дополнении Home Assistant.": "Hanya tersedia di add-on Home Assistant.",
+  "Home Assistant не дал создать скрипт или автоматизацию. Подробности в журнале HA.": "Home Assistant tidak mengizinkan pembuatan skrip atau otomatisasi. Detail ada di log HA.",
+  "Создать в Home Assistant": "Buat di Home Assistant",
+  "Скрипт {0} включает канал по названию: его вызывают Assist, автоматизации, панели и внешний агент через MCP Server в HA. Автоматизация {1} — фразы для Assist «включи канал …». Скрипт {2} — шаблон для способа «Через свой скрипт HA». Существующие не перезаписываются.": "Skrip {0} menyalakan kanal berdasarkan nama: Assist, otomatisasi, dasbor, dan agen luar (lewat MCP Server HA) memanggilnya. Otomatisasi {1} berisi frasa Assist. Skrip {2} adalah templat untuk cara «skrip HA sendiri». Yang sudah ada tidak pernah ditimpa.",
+  "Скрипты и голосовые команды": "Skrip dan perintah suara",
+  "Создано в Home Assistant: {0}": "Dibuat di Home Assistant: {0}",
+  "Всё уже есть в Home Assistant": "Home Assistant sudah punya semuanya"
 };

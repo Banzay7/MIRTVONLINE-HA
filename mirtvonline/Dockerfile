@@ -15,7 +15,7 @@ COPY engine/pyproject.toml engine/README.md /engine/
 COPY engine/src /engine/src
 RUN pip install --no-cache-dir /engine && rm -rf /engine
 
-COPY mirtv_env.py /usr/local/lib/mirtv/mirtv_env.py
+COPY mirtv_env.py mirtv_stdin.py /usr/local/lib/mirtv/
 COPY run.sh /run.sh
 RUN chmod a+x /run.sh
 

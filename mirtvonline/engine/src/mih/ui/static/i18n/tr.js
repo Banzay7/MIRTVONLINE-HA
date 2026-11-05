@@ -481,5 +481,12 @@
   "«На ТВ» теперь идёт на ТВ через Home Assistant": "“TV’de” artık Home Assistant üzerinden TV’ye gidiyor",
   "Сначала ADB-команда в VLC или Just Player, затем Google Cast, затем AirPlay. ТВ по умолчанию хранится на сервере и действует для всех; выбор в этом браузере его заменяет.": "Önce VLC veya Just Player’a ADB komutu, sonra Google Cast, sonra AirPlay. Varsayılan TV sunucuda tutulur ve herkes için geçerlidir; bu tarayıcıdaki seçim onun yerine geçer.",
   "Загружаю список ТВ…": "TV listesi yükleniyor…",
-  "ТВ по умолчанию сохранён": "Varsayılan TV kaydedildi"
+  "ТВ по умолчанию сохранён": "Varsayılan TV kaydedildi",
+  "Доступно только в дополнении Home Assistant.": "Yalnızca Home Assistant eklentisinde kullanılabilir.",
+  "Home Assistant не дал создать скрипт или автоматизацию. Подробности в журнале HA.": "Home Assistant betiği veya otomasyonu oluşturmaya izin vermedi. Ayrıntılar HA günlüğünde.",
+  "Создать в Home Assistant": "Home Assistant'ta oluştur",
+  "Скрипт {0} включает канал по названию: его вызывают Assist, автоматизации, панели и внешний агент через MCP Server в HA. Автоматизация {1} — фразы для Assist «включи канал …». Скрипт {2} — шаблон для способа «Через свой скрипт HA». Существующие не перезаписываются.": "{0} betiği bir kanalı adıyla açar: Assist, otomasyonlar, paneller ve dış bir ajan (HA'nın MCP Server'ı üzerinden) onu çağırır. {1} otomasyonu Assist cümlelerini içerir. {2} betiği «kendi HA betiği» yolu için bir şablondur. Var olanların üzerine asla yazılmaz.",
+  "Скрипты и голосовые команды": "Betikler ve sesli komutlar",
+  "Создано в Home Assistant: {0}": "Home Assistant'ta oluşturuldu: {0}",
+  "Всё уже есть в Home Assistant": "Home Assistant'ta zaten her şey var"
 };
