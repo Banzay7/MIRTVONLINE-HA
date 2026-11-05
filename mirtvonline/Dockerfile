@@ -21,6 +21,9 @@ RUN chmod a+x /run.sh
 
 ARG BUILD_VERSION=dev
 ARG BUILD_ARCH=amd64
+# The add-on's version (Supervisor passes it on install and Update): the site's
+# Settings and Status show it instead of the engine's own development number.
+ENV MIRTV_VERSION="${BUILD_VERSION}"
 LABEL io.hass.type="addon" \
       io.hass.version="${BUILD_VERSION}" \
       io.hass.arch="${BUILD_ARCH}" \

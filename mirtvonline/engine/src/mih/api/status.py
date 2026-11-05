@@ -15,7 +15,7 @@ from mih.api.app import ApiError, Conn
 from mih.config import LANGS, LEVELS, Settings
 from mih.events import list_events, record_event, t
 from mih.health.policy import HealthPolicy
-from mih.scheduler import JOBS, JobBusy, job_process, run_job, status_snapshot
+from mih.scheduler import JOBS, JobBusy, job_offered, job_process, run_job, status_snapshot
 
 UiLang = Annotated[str | None, Query(pattern=f"^({'|'.join(LANGS)})$")]
 JobName = Annotated[str, Path(pattern=f"^({'|'.join(JOBS)})$")]
@@ -45,6 +45,8 @@ def build_router(settings: Settings, policy: HealthPolicy, auth: list,
     @r.post("/jobs/{name}/run", status_code=202)
     def run_now(name: JobName, conn: Conn) -> dict:
         """Start a job in the background; its result arrives in the feed (and as a push)."""
+        if not job_offered(settings, name):
+            raise ApiError("validation_error", f"job {name} is not set up on this server")
         running = conn.execute("SELECT running_since FROM jobs WHERE name = ?", (name,)).fetchone()
         if running and running["running_since"]:
             raise ApiError("conflict", f"job {name} is already running")

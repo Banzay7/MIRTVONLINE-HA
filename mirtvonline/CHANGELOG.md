@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9
+
+- **Status** no longer lists "Upload to Google Drive": the add-on has no Drive set up,
+  so the job could only fail. The **Pushes** line says pushes are not in the add-on and
+  that reminders and results are under **Events**, instead of naming `MIH_NTFY_URL`.
+- Topics and "Run" no longer promise a push: the reminder shows up under **Events**.
+- The playlist search is called the same everywhere ("Playlist scout"), not "grabber".
+- The site's **Settings** and **Status** show the add-on's version, not `0.1.0.dev0`.
+
 ## 0.1.8
 
 - **Settings** → **The "On TV" button** shows only what works in the add-on: the

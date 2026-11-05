@@ -913,7 +913,7 @@ async function viewProgramme(id) {
 
 async function followTopic(topic) {
   const r = await api(`/profiles/${PROFILE}/topics`, { method: "POST", body: { topic } });
-  toast(t("Тема «{0}» добавлена: пуш придёт перед началом передачи", r.topic), 4000);
+  toast(t("Тема «{0}» добавлена: перед началом передачи появится напоминание в «События»", r.topic), 4000);
 }
 
 function alertCard(m) {
@@ -928,7 +928,7 @@ function alertCard(m) {
 
 function topicsBlock(topics, upcoming, total = upcoming.length) {
   return html`<h2>${t("Темы")}</h2>
-    <p class="small muted">${t("Перед началом передачи по теме придёт пуш со ссылкой на запуск. Тема ищется в названии, подзаголовке и жанре передачи, с начала слова.")}</p>
+    <p class="small muted">${t("Перед началом передачи по теме появится напоминание в «События» на странице «Статус» (и пуш, если пуши настроены). Тема ищется в названии, подзаголовке и жанре передачи, с начала слова.")}</p>
     ${topics.length ? html`<div class="chips">${topics.map((tp) => html`<button type="button" class="chip on" data-topic-del="${tp.topic}"
       title="${t("Убрать тему")}" aria-label="${t("Убрать тему {0}", tp.topic)}">${tp.topic} ×</button>`)}</div>` : ""}
     <form id="topic-form" class="row field">
@@ -1212,7 +1212,7 @@ const JOB_NAMES = { sources: t("Обновление плейлистов"), epg
 function discoveryBlock(d) {
   if (!d || !d.found) return "";
   const st = d.by_status || {};
-  return html`<h2>${t("Грабер плейлистов")}</h2>
+  return html`<h2>${t("Поисковик плейлистов")}</h2>
     <div class="kv small">
       <span class="muted">${t("Найдено плейлистов")}</span><span>${t("{0} (репозиториев GitHub {1}, ждут разбора {2})", d.found, d.repos, d.repos_waiting)}</span>
       <span class="muted">${t("Ждут проверки")}</span><span>${st.new || 0}</span>
@@ -1269,7 +1269,7 @@ async function viewStatus() {
       <span class="muted">${t("Версия")}</span><span>${s.version}</span>
       <span class="muted">${t("Запущен")}</span><span>${whenShort(s.started_at)}</span>
       <span class="muted">${t("Планировщик")}</span><span>${s.scheduler ? t("включён") : t("выключен (MIH_SCHEDULER=0)")}</span>
-      <span class="muted">${t("Пуши")}</span><span>${n.channel ? t("ntfy, от уровня «{0}»", n.level) : t("не настроены (MIH_NTFY_URL)")}</span>
+      <span class="muted">${t("Пуши")}</span><span>${n.channel ? t("ntfy, от уровня «{0}»", n.level) : n.addon ? t("в дополнении нет: напоминания и итоги задач видны в «События»") : t("не настроены (MIH_NTFY_URL)")}</span>
     </div>
     ${n.channel ? html`<p><button class="btn" type="button" id="push-test">${t("Отправить тестовый пуш")}</button></p>` : ""}
     <h2>${t("Сейчас")}</h2>${running}
@@ -1398,7 +1398,7 @@ async function viewCoverage(params) {
       ${tile(t("Со ссылкой на поток"), f.streams, pct(f.streams, f.all) + t(" от всех"))}
       ${tile(t("Живые"), f.working, pct(f.working, f.all) + t(" от всех"))}
       ${tile(t("Живые с программой"), f.guide, pct(f.guide, f.working) + t(" от живых"))}
-      ${tile(t("Найдено грабером"), d.auto_channels || 0, t("каналов"))}
+      ${tile(t("Найдено поисковиком"), d.auto_channels || 0, t("каналов"))}
     </div>
 
     <h2>${t("Воронка каталога")}</h2>
@@ -1434,7 +1434,7 @@ async function viewCoverage(params) {
     <h2>${t("Потоки по источникам")}</h2>
     <div class="panel bars">
       ${legend([["seg-guide", t("живые")], ["seg-none", t("не отвечают")]])}
-      ${sources.map((x) => barRow(x.auto ? t("Найдено грабером ({0} плейл.)", nf.format(x.playlists)) : x.name,
+      ${sources.map((x) => barRow(x.auto ? t("Найдено поисковиком ({0} плейл.)", nf.format(x.playlists)) : x.name,
         [[x.working, "seg-guide", t("живые")], [x.streams - x.working, "seg-none", t("не отвечают")]], smax, nf.format(x.streams)))}
     </div>
 
@@ -1752,7 +1752,7 @@ document.addEventListener("click", (e) => {
   if (runBtn) {
     runBtn.disabled = true;
     api(`/jobs/${enc(runBtn.dataset.runJob)}/run`, { method: "POST" })
-      .then(() => { toast(t("Задача запущена. Результат появится в событиях и придёт пушем.")); setTimeout(route, 1500); })
+      .then(() => { toast(t("Задача запущена. Результат появится в «События» на этой странице.")); setTimeout(route, 1500); })
       .catch((err) => { runBtn.disabled = false; toast(errorText(err), 5000); });
     return;
   }
