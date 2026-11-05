@@ -10,7 +10,7 @@
     "favorites": "Đây là các kênh và chương trình đã đánh dấu ★. Thêm chủ đề, ví dụ “bóng đá”: trước khi chương trình như vậy bắt đầu, lời nhắc sẽ hiện trong “{{События}}” ở trang “{{Статус}}”, và nếu đã cài thông báo đẩy thì bạn cũng nhận được thông báo.",
     "coverage": "Danh mục có bao nhiêu kênh, bao nhiêu kênh đang hoạt động và bao nhiêu kênh có lịch phát sóng. Số liệu thay đổi khi danh mục được dựng lại, nhiều nhất mỗi giờ một lần.",
     "status": "Tiện ích đang làm gì: các tác vụ nền (lần lượt từng cái), lịch chạy, các sự kiện gần đây và dung lượng đĩa. Có thể chạy tác vụ bằng tay với nút “{{Запустить}}”.",
-    "settings": "Tại đây đổi ngôn ngữ giao diện, kênh 18+, số kết quả, chế độ tìm kiếm, TV cho nút “{{На ТВ}}” và chất lượng khi bật. Cũng có thể bật lại các gợi ý từ đây."
+    "settings": "Tại đây đổi ngôn ngữ giao diện, kênh 18+, số kết quả, chế độ tìm kiếm, TV cho nút “{{На ТВ}}”, kịch bản Home Assistant cho giọng nói và trợ lý, và chất lượng khi bật. Cũng có thể bật lại các gợi ý từ đây."
   },
   "access": {
     "ha": "Không cần: bạn vào qua thanh bên của Home Assistant, và HA đã kiểm tra tên đăng nhập và mật khẩu của bạn. Tiện ích đã tự tạo khóa cho bản cài này.",
@@ -103,10 +103,25 @@
         "“{{На ТВ}}” bật kênh trên một TV mà Home Assistant đã biết. Không cần kịch bản riêng: tiện ích tìm TV trong các trình phát media của HA, và các thực thể của cùng một TV (ví dụ ADB và Google Cast của một Android TV) được hiển thị là một TV.",
         "Thứ tự thử: trước tiên ADB (tích hợp Android Debug Bridge) mở luồng trong VLC, nếu không thì trong Just Player, và bật TV nếu đang tắt; sau đó Google Cast; rồi AirPlay; rồi bất kỳ trình phát media nào của HA mở được đường dẫn. Để dùng ADB, hãy cài VLC hoặc Just Player trên TV từ Google Play.",
         "Chọn TV trong “{{Настройки}}” → “{{Телевизор}}”: “{{ТВ по умолчанию для всех}}” được lưu trong tiện ích, “{{ТВ в этом браузере}}” thay thế nó cho một điện thoại hoặc máy tính. Nếu Home Assistant chỉ có một TV thì không cần chọn gì.",
-        "Trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” hãy giữ “Thẳng lên TV qua Home Assistant”. Lựa chọn “Qua trợ lý” chỉ dành cho máy chủ đã kết nối trợ lý riêng; nếu không có, lệnh sẽ chờ rồi kết thúc với thông báo “Trợ lý chưa nhận lệnh”.",
+        "Trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” hãy giữ “Thẳng lên TV qua Home Assistant”. Tiện ích hiện chưa kết nối lựa chọn “Qua trợ lý”: lệnh sẽ chờ rồi kết thúc với thông báo “Trợ lý chưa nhận lệnh”. Cách bật kênh bằng giọng nói và từ trợ lý AI có trong mục “Giọng nói, kịch bản và trợ lý”.",
         "“{{Качество при запуске}}”: “Tối đa 720p” bật nhanh hơn và ít giật hơn (mặc định), “Tốt nhất” cho chất lượng cao nhất, “Tự động” để trình phát tự chọn.",
         "Mỗi lần bật bằng “{{На ТВ}}” đều được đo thời gian. Tốc độ kênh là trung vị của 10 lần mở gần nhất: ⚡ nhanh, ✓ bình thường, 🐢 chậm, 🐢🐢 rất chậm. Kênh chậm bị xếp cuối danh sách. Ngưỡng đặt trong “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (mặc định 5 giây); trang kênh có lịch sử “{{Скорость открытия на ТВ}}”.",
         "Samsung, LG và các TV khác không có Android TV: hãy cắm thêm một hộp Google TV (Chromecast với Google TV và tương tự), nó sẽ hiện trong Home Assistant như một TV bình thường."
+      ]
+    },
+    {
+      "id": "agent",
+      "title": "Giọng nói, kịch bản và trợ lý",
+      "items": [
+        "Nút “{{На ТВ}}” trên trang không cần kịch bản. Kịch bản dùng để bật kênh từ chính Home Assistant: bằng giọng nói qua Assist, từ tự động hóa, từ bảng điều khiển và từ trợ lý AI.",
+        "Cách tạo: “{{Настройки}}” → “{{Скрипты и голосовые команды}}” → “{{Создать в Home Assistant}}”. Cũng ở đó thấy được cái gì đã có (✓) và cái gì chưa có (—); nút sẽ biến mất khi đã tạo đủ. Kịch bản và tự động hóa đã có không bao giờ bị ghi đè. Sửa chúng trong Home Assistant: “Cài đặt” → “Tự động hóa và cảnh” → “Kịch bản” hoặc “Tự động hóa”.",
+        "Có ba thứ được tạo. Kịch bản script.mirtv_channel “MIRTVONLINE: включить канал” (bật kênh) bật kênh theo tên: trường channel là tên kênh, trường tv là trình phát media, không bắt buộc (nếu bỏ trống thì dùng TV mặc định). Tự động hóa “MIRTVONLINE: голосом «включи канал …»” thêm các câu lệnh cho Assist. Kịch bản script.mih_play “MIRTVONLINE: свой запуск потока” là mẫu cho ai muốn tự bật luồng theo cách riêng.",
+        "Assist không có AI: các câu tiếng Anh “play channel …”, “turn on channel …”, “put on channel …”, “switch to channel …”, “watch … on tv” và các câu tiếng Nga «включи канал …», «поставь канал …», «канал …» dùng được ngay.",
+        "Assist có AI (OpenAI, Anthropic, Ollama và các loại khác): hãy mở kịch bản cho nó. Trong Home Assistant: “Cài đặt” → “Trợ lý giọng nói” → thẻ “Mở quyền truy cập” (Expose) → “+ Mở quyền truy cập thực thể” → “MIRTVONLINE: включить канал”. Sau đó có thể nói tự nhiên: “bật VTV3 trên TV phòng khách”.",
+        "Trợ lý AI bên ngoài (Claude và các loại khác): trong Home Assistant thêm tích hợp “Model Context Protocol Server” (“Cài đặt” → “Thiết bị và dịch vụ” → “+ Thêm tích hợp”) và mở kịch bản cho Assist như trên. Trợ lý kết nối tới http://<địa chỉ HA>:8123/api/mcp bằng token dài hạn của Home Assistant (“Hồ sơ” → “Bảo mật” → “Tạo token”) và thấy kịch bản như một công cụ. Đây là token của chính HA, không phải MIH_API_TOKEN.",
+        "Trợ lý chỉ cần truyền tên kênh như cách người ta nói. Tiện ích tự tìm kênh, chọn luồng tốt nhất và bật trên TV. Nếu kênh không bật được (không tìm thấy, không có luồng hoạt động, TV không khả dụng), Home Assistant sẽ hiện thông báo “MIRTVONLINE: канал не включился” (kênh không bật được).",
+        "Từ tự động hóa hoặc bảng điều khiển: hành động script.mirtv_channel với dữ liệu channel: “VTV3” và, nếu cần, tv: media_player của bạn.",
+        "Lựa chọn “Qua trợ lý” trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” là chuyện khác: ở đó trợ lý riêng kết nối với MCP của chính máy chủ. Tiện ích hiện chưa hỗ trợ điều này, nên với trợ lý hãy dùng kịch bản như mô tả ở trên."
       ]
     },
     {
