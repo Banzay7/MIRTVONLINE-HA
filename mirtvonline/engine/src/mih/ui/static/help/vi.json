@@ -103,9 +103,9 @@
         "“{{На ТВ}}” bật kênh trên một TV mà Home Assistant đã biết. Không cần kịch bản riêng: tiện ích tìm TV trong các trình phát media của HA, và các thực thể của cùng một TV (ví dụ ADB và Google Cast của một Android TV) được hiển thị là một TV.",
         "Thứ tự thử: trước tiên ADB (tích hợp Android Debug Bridge) mở luồng trong VLC, nếu không thì trong Just Player, và bật TV nếu đang tắt; sau đó Google Cast; rồi AirPlay; rồi bất kỳ trình phát media nào của HA mở được đường dẫn. Để dùng ADB, hãy cài VLC hoặc Just Player trên TV từ Google Play.",
         "Chọn TV trong “{{Настройки}}” → “{{Телевизор}}”: “{{ТВ по умолчанию для всех}}” được lưu trong tiện ích, “{{ТВ в этом браузере}}” thay thế nó cho một điện thoại hoặc máy tính. Nếu Home Assistant chỉ có một TV thì không cần chọn gì.",
-        "Trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” hãy giữ “Thẳng lên TV qua Home Assistant”. Tiện ích hiện chưa kết nối lựa chọn “Qua trợ lý”: lệnh sẽ chờ rồi kết thúc với thông báo “Trợ lý chưa nhận lệnh”. Cách bật kênh bằng giọng nói và từ trợ lý AI có trong mục “Giọng nói, kịch bản và trợ lý”.",
+        "Trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” thường đã chọn “Thẳng lên TV qua Home Assistant”, không cần đổi gì. Lựa chọn thứ hai, “Qua script HA của bạn”, dành cho người tự viết script.mih_play: tiện ích gửi cho nó địa chỉ luồng và tên kênh, còn script tự bật TV. Cách bật kênh bằng giọng nói và từ trợ lý AI có trong mục “Giọng nói, kịch bản và trợ lý”.",
         "“{{Качество при запуске}}”: “Tối đa 720p” bật nhanh hơn và ít giật hơn (mặc định), “Tốt nhất” cho chất lượng cao nhất, “Tự động” để trình phát tự chọn.",
-        "Mỗi lần bật bằng “{{На ТВ}}” đều được đo thời gian. Tốc độ kênh là trung vị của 10 lần mở gần nhất: ⚡ nhanh, ✓ bình thường, 🐢 chậm, 🐢🐢 rất chậm. Kênh chậm bị xếp cuối danh sách. Ngưỡng đặt trong “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (mặc định 5 giây); trang kênh có lịch sử “{{Скорость открытия на ТВ}}”.",
+        "Mỗi lần bật bằng “{{На ТВ}}” đều được đo thời gian. Tốc độ kênh là trung vị của 10 lần mở gần nhất: ⚡ nhanh, ✓ bình thường, 🐢 chậm, 🐢🐢 rất chậm. Kênh chậm bị xếp cuối danh sách. Ngưỡng đặt trong “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (mặc định 5 giây); trang kênh có lịch sử “{{Скорость открытия на ТВ}}”. Với “Thẳng lên TV”, hiện chỉ đo thời gian Home Assistant nhận lệnh, chưa đo đến lúc có hình, nên hầu hết kênh đều được ⚡.",
         "Samsung, LG và các TV khác không có Android TV: hãy cắm thêm một hộp Google TV (Chromecast với Google TV và tương tự), nó sẽ hiện trong Home Assistant như một TV bình thường."
       ]
     },
@@ -121,7 +121,7 @@
         "Trợ lý AI bên ngoài (Claude và các loại khác): trong Home Assistant thêm tích hợp “Model Context Protocol Server” (“Cài đặt” → “Thiết bị và dịch vụ” → “+ Thêm tích hợp”) và mở kịch bản cho Assist như trên. Trợ lý kết nối tới http://<địa chỉ HA>:8123/api/mcp bằng token dài hạn của Home Assistant (“Hồ sơ” → “Bảo mật” → “Tạo token”) và thấy kịch bản như một công cụ. Đây là token của chính HA, không phải MIH_API_TOKEN.",
         "Trợ lý chỉ cần truyền tên kênh như cách người ta nói. Tiện ích tự tìm kênh, chọn luồng tốt nhất và bật trên TV. Nếu kênh không bật được (không tìm thấy, không có luồng hoạt động, TV không khả dụng), Home Assistant sẽ hiện thông báo “MIRTVONLINE: канал не включился” (kênh không bật được).",
         "Từ tự động hóa hoặc bảng điều khiển: hành động script.mirtv_channel với dữ liệu channel: “VTV3” và, nếu cần, tv: media_player của bạn.",
-        "Lựa chọn “Qua trợ lý” trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” là chuyện khác: ở đó trợ lý riêng kết nối với MCP của chính máy chủ. Tiện ích hiện chưa hỗ trợ điều này, nên với trợ lý hãy dùng kịch bản như mô tả ở trên."
+        "Trong “{{Настройки}}” → “{{Кнопка «На ТВ»}}” tiện ích không có lựa chọn “Qua trợ lý”: lựa chọn đó dành cho trợ lý kết nối với MCP của chính máy chủ, mà MCP này tắt trong tiện ích. Với trợ lý hãy dùng kịch bản như mô tả ở trên."
       ]
     },
     {

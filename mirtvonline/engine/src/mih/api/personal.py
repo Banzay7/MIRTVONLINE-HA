@@ -262,6 +262,10 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
         if t.channel_id in adult.hidden_ids(request, conn):
             raise error("adult_locked", "an adult channel: hidden by the 18+ setting")
         mode = body.adapter or settings.playback
+        # A browser that kept "agent" from before, where no agent can take it: the
+        # command would only wait and fail with no_agent.
+        if mode == "agent" and not settings.agent_ready:
+            mode = settings.playback
         if mode in ("ha", "tv") and not settings.ha_ready:
             raise error(
                 "validation_error", "Home Assistant is not set up (MIH_HA_URL, MIH_HA_TOKEN)"
@@ -346,7 +350,9 @@ def register(app: FastAPI, *, auth: list, conn: Any, error: type[Exception]) -> 
     def playback_adapters(request: Request) -> dict:
         """What the web UI may offer for "На ТВ"; the default is MIH_PLAYBACK."""
         settings = request.app.state.settings
-        available = ["agent"] + (["ha", "tv"] if settings.ha_ready else [])
+        available = (["agent"] if settings.agent_ready else []) + (
+            ["ha", "tv"] if settings.ha_ready else []
+        )
         script = mih_ha.script_entity(settings) if settings.ha_ready else None
         return {"default": settings.playback, "available": available, "ha_script": script,
                 # The add-on can create its scripts in HA (Settings → «Создать в HA»).

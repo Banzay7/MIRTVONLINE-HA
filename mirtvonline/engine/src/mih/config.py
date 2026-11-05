@@ -185,6 +185,12 @@ class Settings:
         return bool(self.ha_url and self.ha_token)
 
     @property
+    def agent_ready(self) -> bool:
+        """Can an agent take "На ТВ" commands? Inside the add-on only over its own MCP
+        port; on a server also through ``mih mcp`` on the same host."""
+        return not self.ha_addon or self.mcp_port is not None
+
+    @property
     def db_path(self) -> Path:
         return self.data_dir / "mih.sqlite3"
 

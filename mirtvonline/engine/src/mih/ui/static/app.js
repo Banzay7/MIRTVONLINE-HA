@@ -224,15 +224,15 @@ const PLAY_TEXT = {
   no_agent: t("Агент не взял команду: он не подключён к MCP или не проверяет очередь."),
   no_stream: t("У этого канала сейчас нет рабочего потока."),
   ha_started: t("Home Assistant выполнил скрипт: канал включается на ТВ"),
-  ha_unreachable: t("Home Assistant недоступен с сервера: проверьте MIH_HA_URL и связь (Tailscale)."),
-  ha_unauthorized: t("Home Assistant не принял токен: создайте новый и пропишите в MIH_HA_TOKEN."),
-  ha_script_not_found: t("В Home Assistant нет такого скрипта: проверьте MIH_HA_SCRIPT."),
+  ha_unreachable: t("Home Assistant не ответил дополнению. Перезапустите дополнение; если не поможет, посмотрите его журнал."),
+  ha_unauthorized: t("Home Assistant не принял ключ дополнения. Перезапустите дополнение."),
+  ha_script_not_found: t("В Home Assistant нет вашего скрипта: создайте шаблон в «Скрипты и голосовые команды» или выберите «Напрямую на ТВ»."),
   ha_script_failed: t("Скрипт Home Assistant завершился с ошибкой. Подробности в журнале HA."),
   ha_timeout: t("Home Assistant не ответил вовремя. Канал, возможно, всё же включится."),
   ha_not_playing: t("Скрипт Home Assistant сообщил, что канал не включился"),
   ha_notify_missing: t("В Home Assistant нет сервиса уведомлений ТВ: войдите в Companion на ТВ заново и укажите новый notify.mobile_app_… (MIH_HA_NOTIFY и скрипт)."),
   ha_not_configured: t("Home Assistant не настроен на сервере: MIH_HA_URL, MIH_HA_TOKEN."),
-  tv_not_chosen: t("Не выбран телевизор: выберите его в Настройках (Кнопка «На ТВ»)."),
+  tv_not_chosen: t("Не выбран телевизор: выберите его в Настройках (Телевизор)."),
   tv_none: t("Home Assistant не видит ни одного ТВ. Добавьте ТВ в HA: интеграция Android Debug Bridge или Google Cast."),
   tv_not_found: t("Выбранного ТВ больше нет в Home Assistant: выберите другой в Настройках."),
   tv_unavailable: t("ТВ недоступен в Home Assistant: включите его в сеть или проверьте интеграцию."),
@@ -452,7 +452,7 @@ function openChip(o) {
   return html`<span class="chip open ${o.grade}" title="${t("{0}: обычно {1} (запусков: {2})", label, secs(o.ms), o.n)}">${icon} ${secs(o.ms)}</span>`;
 }
 
-const OPEN_SOURCES = { ha: "Home Assistant", agent: t("агент"), device: t("плеер") };
+const OPEN_SOURCES = { ha: "Home Assistant", tv: t("напрямую на ТВ"), agent: t("агент"), device: t("плеер") };
 
 function openBlock(ch) {
   const hist = ch.open_history || [];
@@ -1100,6 +1100,8 @@ async function viewSettings() {
   try { metrics = await api("/metrics/summary"); } catch (e) { err = err || e; }
   let adapters = null;
   try { adapters = await api("/playback/adapters"); } catch { /* an older server */ }
+  // A choice this server no longer offers (the agent in the add-on) falls back to its default.
+  if (adapters && playAdapter() && !adapters.available.includes(playAdapter())) store.set("mih.adapter", null);
   const current = playAdapter() || adapters?.default || "agent";
   if (adapters?.available.includes("ha")) queueMicrotask(fillHaStatus);
   if (adapters?.available.includes("tv")) queueMicrotask(fillTvs);
@@ -1168,14 +1170,14 @@ async function viewSettings() {
     ${adapters ? html`<div class="field">
       ${adapters.available.includes("tv") ? html`<label class="row"><input type="radio" name="adapter" value="tv" ${current === "tv" ? raw("checked") : ""}>
         ${t("Напрямую на ТВ через Home Assistant: ADB, Google Cast, AirPlay")}</label>` : ""}
-      <label class="row"><input type="radio" name="adapter" value="agent" ${current === "agent" ? raw("checked") : ""}>
-        ${t("Через агента: он берёт команду через MCP, включает ТВ и сообщает, если не заиграло")}</label>
+      ${adapters.available.includes("agent") ? html`<label class="row"><input type="radio" name="adapter" value="agent" ${current === "agent" ? raw("checked") : ""}>
+        ${t("Через агента: он берёт команду через MCP, включает ТВ и сообщает, если не заиграло")}</label>` : ""}
       <label class="row"><input type="radio" name="adapter" value="ha" ${current === "ha" ? raw("checked") : ""}
         ${adapters.available.includes("ha") ? "" : raw("disabled")}>
-        ${t("Напрямую через Home Assistant{0}", adapters.ha_script ? t(": скрипт {0}", adapters.ha_script) : t(" (не настроен на сервере: MIH_HA_URL, MIH_HA_TOKEN)"))}</label>
+        ${adapters.ha_script ? t("Через свой скрипт HA: {0}", adapters.ha_script) : t("Напрямую через Home Assistant{0}", t(" (не настроен на сервере: MIH_HA_URL, MIH_HA_TOKEN)"))}</label>
       ${adapters.available.includes("ha") ? html`<div class="row"><button class="btn" type="button" id="ha-check">${t("Проверить связь с HA")}</button>
         <span class="small" id="ha-status">${t("Проверяю Home Assistant…")}</span></div>` : ""}
-      <span class="small muted">${t("Выбор хранится в этом браузере. Home Assistant получает адреса потоков и название канала и запускает свой скрипт, агент не участвует.")}</span>
+      <span class="small muted">${t("Выбор хранится в этом браузере. Для «Напрямую на ТВ» скрипты не нужны. Свой скрипт получает адреса потоков и название канала и сам включает ТВ; его шаблон создаётся в «Скрипты и голосовые команды».")}</span>
     </div>` : ""}
     ${adapters?.available.includes("tv") ? html`<h2>${t("Телевизор")}</h2>
       <div class="field" id="tv-slot"><span class="small muted">${t("Загружаю список ТВ…")}</span></div>
@@ -1187,7 +1189,8 @@ async function viewSettings() {
       <div class="row"><input id="open-slow" name="slow_s" type="number" inputmode="decimal" step="0.5"
         min="${speed.min_s}" max="${speed.max_s}" value="${speed.slow_s}" style="max-width: 7em">
         <button class="btn tv" type="submit">${t("Сохранить")}</button></div>
-      <span class="small muted">${t("Канал, который обычно открывается на ТВ дольше порога, считается плохим для просмотра и уходит в конец списков. По умолчанию {0}. Время замеряется при каждом запуске кнопкой «На ТВ».", secs(speed.default_s * 1000))}</span>
+      <span class="small muted">${t("Канал, который обычно открывается на ТВ дольше порога, считается плохим для просмотра и уходит в конец списков. По умолчанию {0}. Время замеряется при каждом запуске кнопкой «На ТВ».", secs(speed.default_s * 1000))}
+        ${adapters?.available.includes("tv") ? t("Для «Напрямую на ТВ» пока замеряется только время, за которое Home Assistant принял команду, а не появление картинки, поэтому почти все каналы выглядят быстрыми.") : ""}</span>
     </form>` : ""}
     <h2>${t("Качество при запуске")}</h2>
     <div class="field">
@@ -1918,7 +1921,7 @@ document.addEventListener("input", (e) => {
   if (e.target.name === "adapter") {
     store.set("mih.adapter", e.target.value);
     toast(e.target.value === "tv" ? t("«На ТВ» теперь идёт на ТВ через Home Assistant")
-      : e.target.value === "ha" ? t("«На ТВ» теперь идёт напрямую в Home Assistant") : t("«На ТВ» теперь выполняет агент"));
+      : e.target.value === "ha" ? t("«На ТВ» теперь идёт через ваш скрипт HA") : t("«На ТВ» теперь выполняет агент"));
   }
   if (e.target.name === "quality") {
     store.set("mih.quality", e.target.value);
