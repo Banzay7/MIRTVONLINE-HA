@@ -1,26 +1,43 @@
 {
   "title": "Help",
-  "intro": "How to use MIRTVONLINE: find something to watch and turn a channel on in a couple of taps.",
+  "intro": "How to use MIRTVONLINE in Home Assistant: find something to watch and turn a channel on on the TV in a couple of taps.",
   "contents": "Contents",
   "more": "More in Help",
   "tips": {
-    "home": "This is what is on right now and what starts soon. “{{На ТВ}}” turns the channel on on the TV, ★ adds it to favourites. The list does not refresh by itself: press “{{↻ Обновить}}” when you need to.",
+    "home": "This is what is on right now and what starts soon. “{{На ТВ}}” turns the channel on on the TV, ★ adds it to favourites. The list does not refresh by itself: press “{{↻ Обновить}}” when you need to. Right after install the catalog is empty and fills itself within an hour.",
     "search": "Type in plain words, with a time and a language if you like: “football tomorrow”, “news tonight”, “robots in English”. You can also type nothing, pick a genre and press “{{Найти}}”. The search runs on Enter or the “{{Найти}}” button.",
-    "channels": "Every channel in the catalog. Type part of a name, pick a country and press “{{Показать}}”. A channel's page has its guide for the week and its categories, which you can correct.",
-    "favorites": "Channels and programmes marked with ★ are here. Add a topic, for example “football”, and you get a push before such a programme starts.",
-    "coverage": "How many channels the catalog has, how many of them work right now and how many have a programme guide. Updated after every stream check.",
-    "status": "What the server is doing: background jobs, their schedule and the latest events. A job can be started by hand with the “{{Запустить}}” button.",
-    "settings": "Change the interface language, 18+ channels, the number of results, the search mode and the “{{На ТВ}}” button here. You can also bring the tips back from here."
+    "channels": "Every channel in the catalog. Type part of a name, pick a country or a genre and press “{{Показать}}”. A channel's page has its guide for the week and its categories, which you can correct.",
+    "favorites": "Channels and programmes marked with ★ are here. Add a topic, for example “football”: before such a programme starts a reminder shows up in “{{События}}” on the “{{Статус}}” page, and if pushes are set up you get a push too.",
+    "coverage": "How many channels the catalog has, how many of them work right now and how many have a programme guide. The numbers change when the catalog is rebuilt, at most once an hour.",
+    "status": "What the add-on is doing: background jobs (one at a time), their schedule, the latest events and the disk space used. A job can be started by hand with the “{{Запустить}}” button.",
+    "settings": "Change the interface language, 18+ channels, the number of results, the search mode, the TV for the “{{На ТВ}}” button and the launch quality here. You can also bring the tips back from here."
+  },
+  "access": {
+    "ha": "Not needed: you came in through the Home Assistant sidebar, and HA has already checked your login and password. The add-on made the key for this install by itself.",
+    "open": "Not needed: no key is set on this server, so it checks nothing and accepts any text. Only the server's owner can set a key, in the MIH_API_TOKEN variable.",
+    "token": "This server asks for a key. The server's owner sets it in the MIH_API_TOKEN variable; paste it here in full. The key is kept only in this browser."
   },
   "sections": [
     {
       "id": "start",
       "title": "Getting started",
       "items": [
-        "Open the server's address in a browser on your phone or computer. On a phone you can add it to the home screen: browser menu → “Add to Home Screen”, and the catalog opens like an app.",
-        "If the catalog asks for a token, open “{{Настройки}}” → “{{Токен доступа к API}}”, paste the token and press “{{Сохранить}}”. The token is kept only in this browser.",
-        "There are seven sections at the top: “{{Эфир}}”, “{{Поиск}}”, “{{Каналы}}”, “{{Избранное}}”, “{{Покрытие}}”, “{{Статус}}”, “{{Настройки}}”. The first time you open a page it shows a short “{{Как пользоваться}}” tip; “{{Понятно}}” hides it.",
-        "Screens do not refresh by themselves. The “{{↻ Обновить}}” button or switching to another tab loads fresh data."
+        "Open MIRTVONLINE in the Home Assistant sidebar. On a phone the Home Assistant app (Companion) is the easiest: it has the same sidebar. No separate address or password is needed.",
+        "Right after install the catalog is empty. The add-on looks for public free playlists and checks their streams by itself, so channels appear gradually, usually the first few dozen within an hour. There is no button for your own playlist (from your provider, say) yet: add it through “{{Документация API}}” at the bottom of the “{{Настройки}}” page, with the POST /api/v1/sources request.",
+        "There are seven sections at the top: “{{Эфир}}”, “{{Поиск}}”, “{{Каналы}}”, “{{Избранное}}”, “{{Покрытие}}”, “{{Статус}}”, “{{Настройки}}”, and “?” for this help. The first time you open a page it shows a short “{{Как пользоваться}}” tip; “{{Понятно}}” hides it.",
+        "Screens do not refresh by themselves. The “{{↻ Обновить}}” button or switching to another tab loads fresh data.",
+        "The add-on neither stores nor relays video: the TV takes the stream straight from its source. MIRTVONLINE only builds the catalog and the guide and tells the TV what to play."
+      ]
+    },
+    {
+      "id": "access",
+      "title": "Signing in and the access token",
+      "items": [
+        "In Home Assistant you never type a token. The site opens through the sidebar, and nobody gets into Home Assistant itself without a login and password. That is why “{{Настройки}}” says the token is not needed instead of showing a field for it.",
+        "The token (the MIH_API_TOKEN variable) is needed only when the site and the API are opened directly by address and port, bypassing Home Assistant, for example on a separate server. Think of a code lock on a door: the owner sets the code once, on the lock itself, that is, in the server's settings.",
+        "A guest does not make the code up but types the one they were told: the “{{Токен доступа к API}}” field on the site is the lock's keypad, not the place where the code is changed. The browser only remembers what was typed; “{{Забыть токен}}” erases it from this browser.",
+        "If the owner set no code, the lock is open and any text “fits”. That is not a bug: there is simply nothing to check. If you see this outside Home Assistant, ask the server's owner to set MIH_API_TOKEN.",
+        "The link to Home Assistant for the “{{На ТВ}}” button needs no hand-made token either: Home Assistant gives the add-on its own service key when it starts."
       ]
     },
     {
@@ -28,83 +45,92 @@
       "title": "On air",
       "items": [
         "“{{Сейчас в эфире}}”: what is on the channels right now, with a progress bar and what comes next.",
-        "“{{Скоро начнётся}}”: programmes that are about to begin.",
-        "A separate “{{Избранное}}” block at the top shows what is on your favourite channels now. How many channels to show at once is set in “{{Настройки}}” → “{{Выдача}}”.",
-        "“{{Недавно открытые}}”: channels you recently turned on with “{{На ТВ}}”, with their open speed. “{{Очистить}}” empties this list; the speed history stays."
+        "“{{Скоро начнётся}}”: programmes starting soon.",
+        "A separate “{{Избранное}}” block at the top: what is on your favourite channels right now. How many channels to show at once is set in “{{Настройки}}” → “{{Выдача}}”.",
+        "“{{Недавно открытые}}”: channels you recently turned on with “{{На ТВ}}”, with their opening speed. “{{Очистить}}” clears this list; the speed history stays.",
+        "Not every channel has a programme guide. The add-on loads it once a day at night. It is kept for favourite channels and for programmes matching your topics (while nothing is marked, for every channel found in the guide); past programmes stay visible for 3 days."
       ]
     },
     {
       "id": "search",
       "title": "Search",
       "items": [
-        "Type the way you would say it: “news tonight”, “football tomorrow”, “robots in English”, “BBC One”. The search understands time and language by itself and finds other forms of a word (“robot” finds “robots”).",
-        "Filters under the search box: time (now, today, tonight, tomorrow), what to look for (programmes, channels or everything), the guide language and the genre. Filters only change the choice; the search itself runs on “{{Найти}}” or Enter.",
-        "The language list has Russian, Vietnamese and English at the top, then every language found in the guide and the catalog. The chosen language narrows both programmes and channels.",
-        "A genre without words: pick, say, “{{Спорт}}” and press “{{Найти}}”. An empty search with no filters shows everything on now and in the next few hours.",
-        "“{{Обычный поиск}}” finds word forms and parts of words, “{{Строгий: целые слова}}” finds only the whole word as typed. The default mode and the programme search precision are set in “{{Настройки}}”.",
-        "Past searches appear as a list under the search box. You can turn this off and clear it in “{{Настройки}}” → “{{История поиска}}”.",
-        "The “🔔 Follow the topic” button under the results adds the topic to favourites: you get a push before a matching programme starts."
+        "Type as you would say it: “news tonight”, “football tomorrow”, “robots in English”, “BBC One”. The search understands time and language, handles word forms (“robot” finds “robots”) and does not mix up “ё” and “е”.",
+        "Filters under the box: time (now, today, tonight, tomorrow), what to find (programmes, channels or both), the programme language and the genre. Filters only change the choice; “{{Найти}}” or Enter runs the search.",
+        "The language list: Russian, Vietnamese and English at the top, then every language found in the guide and the catalog. The chosen language narrows both programmes and channels.",
+        "A genre without words: pick, for example, “{{Спорт}}” and press “{{Найти}}”. An empty search with no filters shows everything on now and in the next few hours.",
+        "“{{Обычный поиск}}” finds word forms and parts of words, “{{Строгий: целые слова}}” only the whole word as typed. The default mode and the programme search precision are changed in “{{Настройки}}”.",
+        "Past searches appear as a list under the search box. Remembering them can be turned off and cleared in “{{Настройки}}” → “{{История поиска}}”.",
+        "The “🔔 Follow topic” button under the results adds the topic to favourites: before a matching programme starts a reminder shows up (see “Favourites and topics”)."
       ]
     },
     {
       "id": "channels",
       "title": "Channels and categories",
       "items": [
-        "The “{{Каналы}}” section shows the whole catalog. Filters: part of the name, the country (main countries at the top, then all others with their channel counts) and “{{только с программой}}”. Press “{{Показать}}”.",
+        "“{{Каналы}}” shows the whole catalog. Filters: part of the name, country (main countries at the top, then all the others with their channel count), genre, “{{только с программой}}” and “{{Недавно открытые}}”. Press “{{Показать}}”.",
         "Channels without working streams are hidden by default; change this in “{{Настройки}}” → “{{Выдача}}”.",
-        "A channel's page has its guide by day with what is on now marked, the channel's versions (for example “+2” with a time shift, or regional ones) and the “{{На ТВ}}” button.",
-        "Every channel has one main category and up to three extra ones. They are found automatically from the channel directory, playlist groups, the name, the brand and the programme guide, and recalculated after every catalog update.",
-        "To correct a category: channel page → “{{Изменить категории}}” → pick the main and extra ones → “{{Сохранить}}”. Your choice beats the automatic one and applies at once in search, lists and exports. “{{Вернуть автоматические}}” undoes it; the automatic categories return after the next check, within 10 minutes."
+        "A channel's page: the guide by day with what is on now marked, the channel's versions (for example “+2” with a time shift, or regional ones) and the “{{На ТВ}}” button.",
+        "Every channel has one main category and up to three more. They are set automatically from the channel directory, playlist groups, the name, the brand and the programme guide, and are recalculated at every catalog rebuild.",
+        "A category can be corrected: channel page → “{{Изменить категории}}” → pick the main one and the extra ones → “{{Сохранить}}”. Your choice beats the automatic one and works at once in search and lists. “{{Вернуть автоматические}}” undoes the manual choice; the automatic categories come back at the next catalog rebuild, usually within an hour."
       ]
     },
     {
       "id": "adult",
       "title": "18+ channels",
       "items": [
-        "Adult channels are detected automatically, including ones behind harmless names. The setting is in “{{Настройки}}” → “{{Каналы 18+}}”: “{{Скрывать}}”, “{{Скрывать, открывать по PIN}}” or “{{Показывать}}”. It is kept on the server and applies in every browser.",
+        "Adult channels are detected automatically, including those behind harmless names. The setting is in “{{Настройки}}” → “{{Каналы 18+}}”: “{{Скрывать}}”, “{{Скрывать, открывать по PIN}}” or “{{Показывать}}”. It is kept in the add-on and works in every browser.",
         "PIN mode: set a PIN of 4–8 digits and press “{{Сохранить}}”. To open 18+ channels, enter the PIN in the same section and press “Open for … h”; “{{Закрыть сейчас}}” hides them again. After several wrong PINs entry is blocked for 15 minutes.",
-        "The “To review” block: open “{{Поиск}}”, pick the genre “{{Для взрослых}}” and press “{{Найти}}”. At the top you see channels that were put under 18+ on indirect signs only, each with the reason.",
-        "For each channel in “To review” press “{{Да, 18+}}” if it really is an adult channel, or choose “{{Перенести в…}}” and the right category. The decision is saved as a manual category and the channel leaves the block.",
-        "You can also mark a channel as 18+ by hand: channel page → “{{Изменить категории}}” → “{{Для взрослых}}”."
+        "The “To review” block: open “{{Поиск}}”, pick the “{{Для взрослых}}” genre and press “{{Найти}}”. At the top you see channels that went to 18+ only on indirect signs, each with the reason.",
+        "For each channel in “To review” press “{{Да, 18+}}” if it really is an adult channel, or choose “{{Перенести в…}}” and the right category. The decision is kept as a manual category, and the channel leaves the block.",
+        "A channel can also be marked 18+ by hand: channel page → “{{Изменить категории}}” → “{{Для взрослых}}”."
       ]
     },
     {
       "id": "favorites",
       "title": "Favourites and topics",
       "items": [
-        "★ on a channel or programme adds it to “{{Избранное}}”. Favourites are kept on the server and seen from every device.",
-        "If a channel disappears from the playlists it stays in favourites and comes back when it reappears in a source.",
-        "“{{Темы}}”: add a word, for example “football”, and you get a push before a matching programme starts."
+        "★ on a channel or programme adds it to “{{Избранное}}”. Favourites are kept in the add-on and seen on every device.",
+        "If a channel disappears from the playlists, it stays in favourites and comes back when it reappears in a source.",
+        "“{{Темы}}”: add a word, for example “football”. Before a matching programme starts a reminder shows up in “{{События}}” on the “{{Статус}}” page.",
+        "Pushes to a phone come only if ntfy is set up on the server: see the “{{Пуши}}” line on the “{{Статус}}” page. The Home Assistant add-on has no push setup yet, so reminders stay in “{{События}}”."
       ]
     },
     {
       "id": "tv",
       "title": "The “{{На ТВ}}” button",
       "items": [
-        "“{{На ТВ}}” turns the chosen channel on on the TV. How is chosen in “{{Настройки}}” → {{Кнопка «На ТВ»}}: through the home agent or straight through Home Assistant.",
-        "For Home Assistant there is a “{{Проверить связь с HA}}” button: it shows whether it answers and whether the start script is found.",
+        "“{{На ТВ}}” turns the channel on on a TV that Home Assistant already knows. No script of your own is needed: the add-on finds the TVs among HA's media players and shows the entities of one TV (for example ADB and Google Cast of the same Android TV) as one TV.",
+        "The order of attempts: first ADB (the Android Debug Bridge integration) opens the stream in VLC, else in Just Player, and turns on a TV that is off; then Google Cast; then AirPlay; then any HA media player that can open a link. For ADB install VLC or Just Player on the TV from Google Play.",
+        "Which TV to use is chosen in “{{Настройки}}” → “{{Телевизор}}”: “{{ТВ по умолчанию для всех}}” is kept in the add-on, “{{ТВ в этом браузере}}” replaces it for one phone or computer. With a single TV in Home Assistant nothing needs picking.",
+        "In “{{Настройки}}” → “{{Кнопка «На ТВ»}}” keep “Straight to the TV through Home Assistant”. The “Through the agent” choice is only for a server with an agent of its own connected; without one the command waits and ends with “The agent did not take the command”.",
         "“{{Качество при запуске}}”: “Up to 720p” starts faster and buffers less (the default), “Best” gives the highest quality, “Auto” leaves the choice to the player.",
-        "Every “{{На ТВ}}” launch is timed. A channel's speed is the median of its last 10 opens: ⚡ fast, ✓ normal, 🐢 slow, 🐢🐢 very slow. Slow channels go to the end of the lists. The threshold is set in “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (default 5 s); the channel page shows its “{{Скорость открытия на ТВ}}” history."
+        "Every launch with “{{На ТВ}}” is timed. A channel's speed is the median of its last 10 openings: ⚡ fast, ✓ normal, 🐢 slow, 🐢🐢 very slow. Slow channels go to the end of lists. The threshold is set in “{{Настройки}}” → “{{Порог медленного открытия, секунд}}” (5 s by default); the channel page shows its “{{Скорость открытия на ТВ}}” history.",
+        "Samsung, LG and other TVs without Android TV: plug in a Google TV box (Chromecast with Google TV and the like), and it shows up in Home Assistant as an ordinary TV."
       ]
     },
     {
       "id": "coverage",
       "title": "Coverage and status",
       "items": [
-        "“{{Покрытие}}” shows how many channels the catalog has, how many are alive now and how many have a guide, by country and by where the category came from.",
-        "“{{Статус}}” shows the background jobs (updating playlists and the guide, checking streams, finding new playlists), their schedule, the result of the last run and the event feed. A job can be started by hand with the “{{Запустить}}” button.",
-        "The catalog is rebuilt after every stream check, usually in under a minute. Right after a server restart the first build takes longer while the cache warms up."
+        "“{{Покрытие}}” shows how many channels the catalog has, how many of them are alive right now and how many have a guide, by country and by where the category came from.",
+        "“{{Статус}}” shows the background jobs, their schedule (“{{План на сутки}}”), the result of the last run and the “{{События}}” feed. A job can be started by hand with “{{Запустить}}”.",
+        "Jobs with similar names do different things. “{{Поисковик плейлистов}}” looks for new public playlists on the internet, “{{Упаковщик плейлистов}}” checks their streams and adds the working channels to the catalog. “{{Обновление плейлистов}}” only re-reads playlists already added; if you added none of your own, it has nothing to do.",
+        "“{{Проверка потоков}}” re-checks the working streams once a week, “{{Обновление телепрограммы}}” loads the programme guide once a day at night.",
+        "The add-on runs in light mode for a home box: jobs run strictly one at a time and give way to the site, and the catalog is rebuilt only when something changed, at most once an hour. So new things do not appear instantly.",
+        "“{{Данные на диске}}”: how much space the add-on takes (database, snapshots, other), and the time and peak memory of the last catalog build. The same numbers go to the add-on's log in Home Assistant."
       ]
     },
     {
       "id": "settings",
       "title": "Settings and language",
       "items": [
-        "“{{Язык интерфейса}}”: 20 languages, with the three main ones (Russian, English, Vietnamese) at the top of the list. The language is remembered in this browser.",
-        "Texts that come from the server (events, summaries) are shown in Russian, English or Vietnamese; for the other interface languages they come in English.",
+        "“{{Язык интерфейса}}”: 20 languages, the three main ones (Russian, English, Vietnamese) at the top. The language is remembered in this browser. Help is in Russian, English and Vietnamese; for the other languages it is in English.",
+        "Texts that come from the server (events, digests) are in the language chosen in the add-on's options in Home Assistant: Russian, English or Vietnamese.",
         "“{{Выдача}}”: how many to show at once, channel logos, whether to hide channels without working streams.",
         "“{{Подсказки}}” → “{{Показать все подсказки снова}}” brings the “{{Как пользоваться}}” tips back on every page.",
-        "Results, search and language settings are kept in this browser; the 18+ mode, favourites and manual categories are kept on the server."
+        "Result, search, language and per-browser TV settings are kept in the browser; the 18+ mode, favourites, manual categories and the default TV are kept in the add-on.",
+        "The notification language, data profile, home country and time zone are changed not here but in Home Assistant: “Settings” → “Add-ons” (“Apps” in newer versions) → MIRTVONLINE → “Configuration”."
       ]
     }
   ]

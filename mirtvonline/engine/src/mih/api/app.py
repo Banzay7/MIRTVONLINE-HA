@@ -238,8 +238,15 @@ def create_app(settings: Settings, health_policy: HealthPolicy | None = None) ->
         )
 
     @app.get("/api/v1/health/live")
-    def live() -> dict:
-        return {"status": "ok", "version": __version__}
+    def live(request: Request) -> dict:
+        """``access`` tells the web UI how this browser got in, so Settings can explain
+        the token: ha (the HA sidebar panel, HA checked the user), token (MIH_API_TOKEN
+        is required) or open (no token is set, nothing is checked)."""
+        if from_ingress(request.scope, request.app.state.ingress):
+            access = "ha"
+        else:
+            access = "token" if settings.api_token else "open"
+        return {"status": "ok", "version": __version__, "access": access}
 
     @app.get("/api/v1/data-version")
     def data_version_now() -> JSONResponse:
